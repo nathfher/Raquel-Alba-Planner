@@ -31,7 +31,7 @@ def ver_historial():
     print("==========================================\n")
 
     # Usamos tu función de seguridad para cargar el archivo
-    reservas = fg.ensure_file_exist('historial_reservas.json', [])
+    reservas = fg.ensure_file_exist('data/historial_reservas.json', [])
     ganancia_total_empresa = 0
     if not reservas:
         print("⚠️ No se encontraron bodas registradas en el historial.")

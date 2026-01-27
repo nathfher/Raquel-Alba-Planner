@@ -3,12 +3,20 @@ import json
 import os
 
 def write_json(ruta,data):
-    """Escribe datos en archivos JSON"""
+    """
+    Guarda información en un archivo JSON.
+    Recibe la ruta del archivo y los datos (listas o diccionarios) para escribirlos 
+    con un formato ordenado (indentación de 4 espacios).
+    """
     with open(ruta,'w',encoding='utf-8') as f:
         json.dump(data,f,indent=4)
 
 def ensure_file_exist(ruta,data_inicial):
-    """Se asegura que existe el archivo, y si no existe, lo crea"""
+    """
+    Verifica si un archivo existe. Si existe, lo lee y devuelve su contenido.
+    Si no existe, crea el archivo con la 'data_inicial' que le enviemos 
+    (por ejemplo, una lista vacía []) para evitar errores de lectura.
+    """
     if os.path.exists(ruta):
         with open(ruta,'r',encoding='utf-8') as f:
             return json.load(f)
@@ -21,14 +29,20 @@ def ensure_file_exist(ruta,data_inicial):
     return data_inicial
 
 def guardar_elemento(mi_elemento, list_elements, nombre_archivo):
-    """Toma a un elemento nuevo y lo registra en la lista general""" 
+    """
+    Convierte un objeto (Cliente, Lugar, etc.) a diccionario y lo guarda en una lista.
+    Luego actualiza el archivo JSON correspondiente para que los cambios sean permanentes.
+    """ 
     nuevo_elemento_dict = vars(mi_elemento).copy() #elemento = cliente,lugar,trabajador
     list_elements.append(nuevo_elemento_dict)
     write_json(nombre_archivo, list_elements)
     print(f"Registro: {mi_elemento.nombre} guardado en {nombre_archivo} con éxito.")
 
 def buscar_elemento_id(id_buscado,list_elements):
-    """Busca cualquier elemento revisando sus llaves de ID"""
+    """
+    Busca un elemento específico dentro de una lista usando su ID único.
+    Si lo encuentra, devuelve el elemento; si no, devuelve None.
+    """
     for element in list_elements:
         for llave in element:
             if llave.startswith('id') and element[llave] == id_buscado:
@@ -36,7 +50,11 @@ def buscar_elemento_id(id_buscado,list_elements):
     return None
 
 def actualizar_element(id_element,list_elements,datos_nuevos,element,nombre_archivo):
-    """Busca el elemento y si lo encuentra, cambia sus datos por los nuevos"""
+    """
+    Busca un elemento por su ID y actualiza sus datos (nombre, email, etc.).
+    Protege los IDs para que no se puedan modificar por error. Al terminar, 
+    guarda los cambios automáticamente en el archivo JSON.
+    """
     datos_antiguos = buscar_elemento_id(id_element,list_elements)
     if datos_antiguos is None:
         print(f'Error: el {element} con ID: {id_element} no existe.')
@@ -50,7 +68,11 @@ def actualizar_element(id_element,list_elements,datos_nuevos,element,nombre_arch
     return datos_antiguos
 
 def eliminar_elemento(id_eliminar,list_elements,nombre_archivo,llave_id):
-    """Crea una lista nueva con todos los clientes exceptuando al eliminado"""
+    """
+    Elimina un registro de la lista (un cliente, lugar o trabajador).
+    Crea una nueva lista que excluye al elemento con el ID indicado y 
+    actualiza el archivo JSON para que el borrado sea permanente.
+    """
     lista_nueva = []
     element_a_borrar = buscar_elemento_id(id_eliminar,list_elements)
     if element_a_borrar is None:
@@ -64,7 +86,11 @@ def eliminar_elemento(id_eliminar,list_elements,nombre_archivo,llave_id):
     return lista_nueva
 #llave_fecha seria  ocuapdas en personal y reservadas en lugar
 def reservar_fecha(id_elemento,list_elements,fecha_evento,llave_fechas,nombre_archivo):
-    """Verifica la disponibilidad de las fechas"""
+    """
+    Verifica si una fecha está libre para un lugar o trabajador.
+    Si la fecha no está en la lista de 'fechas_ocupadas', la agrega y guarda 
+    el cambio en el JSON. Si ya está ocupada, avisa del conflicto.
+    """
     elemento_completo = buscar_elemento_id(id_elemento,list_elements) #me devuelve el diccionario
     if elemento_completo is None:
         print("El Id introducido no existe")
@@ -78,7 +104,11 @@ def reservar_fecha(id_elemento,list_elements,fecha_evento,llave_fechas,nombre_ar
         write_json(nombre_archivo,list_elements)
 
 def eliminar_fecha(id_elemento,list_elements,fecha_evento,llave_fechas,nombre_archivo):
-    """Elimina la fecha que se introduce y que se halla en la lista"""
+    """
+    Libera una fecha previamente reservada.
+    Busca la fecha en la lista de ocupación del elemento y la elimina, 
+    permitiendo que ese lugar o trabajador vuelva a estar disponible ese día.
+    """
     elemento_completo = buscar_elemento_id(id_elemento,list_elements) #me devuelve el diccionario
     if elemento_completo is None:
         print("El Id no existe")
@@ -91,7 +121,13 @@ def eliminar_fecha(id_elemento,list_elements,fecha_evento,llave_fechas,nombre_ar
     return False
 
 def mostar_lugares(lista_encontrada):
-    """Muestra el diccionario de lugares disponibles"""
+    """
+    Muestra en consola de forma detallada los salones que cumplen con los requisitos.
+    
+    Imprime el ID (necesario para la selección), el nombre del salón, 
+    su capacidad máxima de invitados y el costo base del alquiler. 
+    Si la lista está vacía, informa que no hay opciones para la fecha solicitada.
+    """
     if not lista_encontrada:
         print("No hay salones disponibles para esta fecha")
     else:
@@ -103,7 +139,11 @@ def mostar_lugares(lista_encontrada):
         print('')
 
 def mostrar_personal(lista_encontrada):
-    """Muestra el diccionario de trabajadores disponibles"""
+    """
+    Imprime en consola de forma tabular la lista de trabajadores disponibles.
+    Muestra el ID, nombre y sueldo de cada profesional encontrado para facilitar 
+    la selección al usuario.
+    """
     if not lista_encontrada:
         print("No se encontró personal disponible")
     else:
@@ -115,7 +155,10 @@ def mostrar_personal(lista_encontrada):
 
 
 def get_inventario_disponibles(id_lugar,fecha_evento,lista_lugares):
-    """Muesta una lista con los objetos disponibles"""
+    """
+    Filtra los objetos del inventario de un lugar específico que no tienen 
+    reservas para la fecha indicada. Retorna una lista con los objetos libres.
+    """
     lugar = buscar_elemento_id(id_lugar,lista_lugares)
     if lugar is None:
         print("El lugar no existe")
@@ -128,8 +171,10 @@ def get_inventario_disponibles(id_lugar,fecha_evento,lista_lugares):
 
 def hay_conflicto_horario(reserva, fecha_nueva, h_ini_nueva, h_fin_nueva):
     """
-    Compara una reserva existente con la nueva petición.
-    reserva: dict con {'fecha': '...', 'inicio': int, 'fin': int}
+    Aplica la lógica de colisión de intervalos:
+    Dos eventos en la misma fecha chocan si el inicio de uno es previo al fin 
+    del otro y el fin de uno es posterior al inicio del otro.
+    Retorna True si hay solapamiento, False si el horario está libre.
     """
     if reserva['fecha'] == fecha_nueva:
         # Regla de oro: Chocan si el inicio de uno es antes del fin del otro 
@@ -140,8 +185,9 @@ def hay_conflicto_horario(reserva, fecha_nueva, h_ini_nueva, h_fin_nueva):
 
 def get_personal_disponible(tipo_buscado, lista_personal, fecha_evento, h_ini, h_fin):
     """
-    Filtra el personal por oficio y verifica que no tenga 
-    reservas que se solapen con el horario solicitado.
+    Busca trabajadores por oficio (ej. 'Fotógrafo') y valida su agenda.
+    Itera sobre todas las reservas previas del trabajador para asegurar que 
+    ninguna se solape con el rango de horas solicitado para la boda.
     """
     personal_disponible = []
     
@@ -164,6 +210,13 @@ def get_personal_disponible(tipo_buscado, lista_personal, fecha_evento, h_ini, h
 from datetime import datetime, timedelta
 
 def get_lugares_disponibles(fecha_str, lista_lugares, h_ini, h_fin, invitados):
+    """
+    Motor de búsqueda de ubicaciones con sistema de recomendación:
+    1. Busca lugares que cumplan con la capacidad y disponibilidad horaria.
+    2. Si no hay éxito, busca automáticamente en los 3 días posteriores para 
+       sugerir alternativas al usuario.
+    Retorna una tupla (lista_disponibles, lista_sugerencias).
+    """
     # 1. Intento original
     disponibles = []
     for lugar in lista_lugares:
@@ -194,7 +247,11 @@ def get_lugares_disponibles(fecha_str, lista_lugares, h_ini, h_fin, invitados):
     
     return [], sugerencias
 def can_select_lugar(lugar,cant_invitados:int, presupuesto_max:float):
-    """Revisa si tu presupuesto y cant_invitados esta acorde con la del lugar"""
+    """
+    Valida si un salón cumple con los dos filtros restrictivos básicos:
+    Capacidad de personas y límite de presupuesto del cliente.
+    Informa al usuario el motivo específico en caso de rechazo.
+    """
     if lugar['capacidad'] < cant_invitados:
         print(f'La capacidad del salón es insuficiente para el número de invitados'
               f'(Máx: {lugar["capacidad"]})')
@@ -220,7 +277,12 @@ def contratar_personal(lista_personal,id_personal):
     return trabajador_encontrado #la list_contratados la lleno en el main
 
 def calcular_costo_personal(lista_contratados):
-    """ Mediante un acumulador, con un for recorren la list de contratados"""
+    """
+    Calcula el costo total de la mano de obra.
+    
+    Recorre la lista de profesionales seleccionados y suma sus sueldos/tarifas
+    individuales basándose en la llave 'costo_servicio'.
+    """
     sueldo = 0
     for i in lista_contratados:
         sueldo+=i['costo_servicio']
@@ -228,7 +290,13 @@ def calcular_costo_personal(lista_contratados):
 
 
 def calcular_costo_inventario(lista_inventario):
-    """Suma el costo total de los diccionarios en la lista"""
+    """
+    Calcula el costo total de los insumos y objetos (catering, mobiliario, etc.).
+    
+    Multiplica el precio unitario por la cantidad requerida de cada item. 
+    Utiliza el método .get() para evitar errores si alguna propiedad no está 
+    definida en el diccionario del objeto.
+    """
     suma_total = 0
     for i in lista_inventario:
         # Buscamos los valores en el diccionario
@@ -243,13 +311,28 @@ def calcular_costo_inventario(lista_inventario):
 def calculate_total(costo_inv: float,
                     costo_pers:float,
                     costo_lug:float,):
-    """Calcula el presupuesto final de la boda"""
+    """
+    Calcula el presupuesto final de la boda aplicando cargos adicionales.
+    
+    Suma los tres costos base (inventario, personal y lugar) y añade un 26% 
+    extra que corresponde a:
+    - 10% por honorarios del Wedding Planner.
+    - 16% por impuestos (IVA).
+    """
     costo_total = costo_inv + costo_pers + costo_lug
     extras = costo_total*0.26 #suma 0,10 de costo_wedding planner y 0,16 de impuestos
     return costo_total + extras
 
 def build_cotizacion(cliente, lug_elegido, sel_pers, lista_items, fecha, h_inicio, h_fin):
-    """Construye un diccionario completo incluyendo el bloque horario"""
+    """
+    Construye el objeto maestro de la cotización con toda la metadata del evento.
+    
+    Realiza las siguientes acciones:
+    1. Valida si el lugar es apto (capacidad y presupuesto).
+    2. Ejecuta los cálculos financieros detallados.
+    3. Registra el bloque horario y calcula la duración del evento.
+    4. Estructura un diccionario final listo para ser guardado o impreso.
+    """
     
     if can_select_lugar(lug_elegido, cliente.invitados, cliente.presupuesto) is False:
         return 'Error: El lugar no cumple los requisitos'
@@ -452,22 +535,25 @@ def limpiar_pantalla():
         os.system('clear')
 
 def guardar_reserva_json(nueva_boda):
-    nombre_archivo = 'historial_reservas.json'
+    # 1. Decimos dónde se va a guardar (en la carpeta data)
+    nombre_archivo = 'data/historial_reservas.json'
 
-    # Intentamos leer lo que ya existe
-    try:
-        with open(nombre_archivo, 'r', encoding='utf-8') as f:
-            historial = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        # Si el archivo no existe o está vacío, empezamos una lista nueva
-        historial = []
+    # 2. Leemos lo que ya hay en el archivo. 
+    # Si no existe, historial será una lista vacía []
+    historial = ensure_file_exist(nombre_archivo, [])
 
-    # Añadimos la nueva boda a la lista
-    historial.append(nueva_boda)
+    # 3. Convertimos la boda en un "diccionario" (formato JSON)
+    # Como 'nueva_boda' es un objeto de clase, necesitamos vars()
+    boda_diccionario = vars(nueva_boda)
 
-    # Guardamos la lista actualizada
+    # 4. Agregamos la nueva boda a la lista que ya teníamos
+    historial.append(boda_diccionario)
+
+    # 5. Escribimos la lista completa de nuevo en el archivo
     with open(nombre_archivo, 'w', encoding='utf-8') as f:
         json.dump(historial, f, indent=4, ensure_ascii=False)
+    
+    print("✅ La boda se guardó correctamente en el historial.")
 
 
 def generar_ticket(cliente, lugar, personal, servicios, subtotal, comision, total, fecha_boda):

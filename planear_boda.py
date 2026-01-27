@@ -9,12 +9,12 @@ def ejecutar_registro_boda():
     print("==========================================\n")
 
     # 1. CARGAR DATOS
-    lista_lugares = fg.ensure_file_exist('lugares.json', [])
-    lista_personal = fg.ensure_file_exist('personal.json', [])
-    lista_inventario = fg.ensure_file_exist('inventario.json', [])
-    lista_clientes = fg.ensure_file_exist("clientes.json", [])
-    lista_catering = fg.ensure_file_exist('catering.json', [])
-    lista_musica = fg.ensure_file_exist('musica.json', [])
+    lista_lugares = fg.ensure_file_exist('data/lugares.json', [])
+    lista_personal = fg.ensure_file_exist('data/personal.json', [])
+    lista_inventario = fg.ensure_file_exist('data/inventario.json', [])
+    lista_clientes = fg.ensure_file_exist("data/clientes.json", [])
+    lista_catering = fg.ensure_file_exist('data/catering.json', [])
+    lista_musica = fg.ensure_file_exist('data/musica.json', [])
 
     if not lista_lugares:
         print("❌ ERROR CRÍTICO: No se puede planear una boda sin lugares en la base de datos.")
@@ -237,9 +237,9 @@ def ejecutar_registro_boda():
         fg.procesar_confirmacion_boda(cotizacion, lista_lugares, lista_personal, lista_inventario)
 
         # Guardar cambios en archivos físicos
-        fg.write_json('lugares.json', lista_lugares)
-        fg.write_json('personal.json', lista_personal)
-        fg.write_json('inventario.json', lista_inventario)
+        fg.write_json('data/lugares.json', lista_lugares)
+        fg.write_json('data/personal.json', lista_personal)
+        fg.write_json('data/inventario.json', lista_inventario)
 
         # Generar archivos finales
         fg.guardar_reserva_json(cotizacion)
