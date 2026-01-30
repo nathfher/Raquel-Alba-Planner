@@ -1,7 +1,6 @@
 import locale
 import funciones_generales as fg
-import pl_boda_con_fg # Importamos el otro archivo
-from datetime import datetime
+import planear_boda # Importamos el otro archivo
 
 # --- CONFIGURACIÓN DE IDIOMA ---
 try:
@@ -44,7 +43,7 @@ def ver_historial():
             total = boda['total_final']
             comision = boda.get('comision', 0) # <--- Extraemos la comisión
             ganancia_total_empresa += comision # <--- Sumamos
- 
+
             print(f"{i}. CLIENTE: {nombre_cliente}")
             print(f"   TOTAL: ${total:.2f} | COMISIÓN EMPRESA: ${comision:.2f}")
             print("-" * 40)
@@ -61,6 +60,13 @@ def ver_historial():
     input("Presione Enter para volver al Menú Principal...")
 
 def main():
+    """
+    Punto de entrada principal de la aplicación Wedding Planner.
+    
+    Gestiona el bucle principal de la interfaz de consola, permitiendo al 
+    usuario navegar entre las opciones de registro de nuevas bodas, 
+    consulta del historial financiero y salida del sistema.
+    """
     while True:
         fg.limpiar_pantalla()
         print("=== MENU WEDDING PLANNER ===")
@@ -71,7 +77,7 @@ def main():
         op = input("Seleccione: ")
 
         if op == "1":
-            pl_boda_con_fg.ejecutar_registro_boda() # Llamamos a la función del otro archivo
+            planear_boda.ejecutar_registro_boda() # Llamamos a la función del otro archivo
         elif op == "2":
             ver_historial()
         elif op == "3":

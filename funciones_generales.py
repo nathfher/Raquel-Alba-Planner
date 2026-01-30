@@ -1,4 +1,5 @@
 """Este programa contiene las funciones generales del sistema"""
+from datetime import datetime,timedelta
 import json
 import os
 
@@ -177,8 +178,6 @@ def hay_conflicto_horario(reserva, fecha_nueva, h_ini_nueva, h_fin_nueva):
     Retorna True si hay solapamiento, False si el horario está libre.
     """
     if reserva['fecha'] == fecha_nueva:
-        # Regla de oro: Chocan si el inicio de uno es antes del fin del otro 
-        # Y el fin de uno es después del inicio del otro.
         if h_ini_nueva < reserva['fin'] and h_fin_nueva > reserva['inicio']:
             return True
     return False
@@ -190,24 +189,22 @@ def get_personal_disponible(tipo_buscado, lista_personal, fecha_evento, h_ini, h
     ninguna se solape con el rango de horas solicitado para la boda.
     """
     personal_disponible = []
-    
+
     for persona in lista_personal:
         # 1. Verificamos el oficio (usamos .lower() para evitar errores de mayúsculas)
         if persona['oficio'].lower() == tipo_buscado.lower():
-            
+
             conflicto = False
             # 2. Revisamos sus fechas ocupadas (que ahora son una lista de diccionarios)
             for reserva in persona['fechas_ocupadas']:
                 if hay_conflicto_horario(reserva, fecha_evento, h_ini, h_fin):
                     conflicto = True
                     break # Si choca con una, ya no nos sirve
-            
+
             if not conflicto:
                 personal_disponible.append(persona)
-                
-    return personal_disponible
 
-from datetime import datetime, timedelta
+    return personal_disponible
 
 def get_lugares_disponibles(fecha_str, lista_lugares, h_ini, h_fin, invitados):
     """
@@ -223,20 +220,20 @@ def get_lugares_disponibles(fecha_str, lista_lugares, h_ini, h_fin, invitados):
         if lugar['capacidad'] >= invitados:
             if not hay_conflicto_horario(lugar['fechas_ocupadas'], fecha_str, h_ini, h_fin):
                 disponibles.append(lugar)
-    
+
     # 2. Si hay disponibles, los retornamos normal
     if disponibles:
         return disponibles, None # None significa que no hubo necesidad de sugerencias
-    
+
     # 3. SI NO HAY: Buscamos sugerencias (Motor Inteligente)
     sugerencias = []
     fecha_obj = datetime.strptime(fecha_str, "%d/%m/%Y")
-    
+
     # Buscamos en los próximos 3 días
     for i in range(1, 4):
         nueva_fecha_obj = fecha_obj + timedelta(days=i)
         nueva_fecha_str = nueva_fecha_obj.strftime("%d/%m/%Y")
-        
+
         for lugar in lista_lugares:
             if lugar['capacidad'] >= invitados:
                 if not hay_conflicto_horario(lugar['fechas_ocupadas'], nueva_fecha_str, h_ini, h_fin):
@@ -244,7 +241,7 @@ def get_lugares_disponibles(fecha_str, lista_lugares, h_ini, h_fin, invitados):
                         "nombre": lugar['nombre'],
                         "fecha": nueva_fecha_str
                     })
-    
+
     return [], sugerencias
 def can_select_lugar(lugar,cant_invitados:int, presupuesto_max:float):
     """

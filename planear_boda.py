@@ -1,5 +1,5 @@
+from datetime import datetime
 import funciones_generales as fg
-from datetime import datetime, timedelta
 from modulos import Cliente, Personal, ItemReserva
 
 def ejecutar_registro_boda():
