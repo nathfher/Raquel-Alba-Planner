@@ -3,6 +3,22 @@ import funciones_generales as fg
 from modulos import Cliente, Personal, ItemReserva
 
 def ejecutar_registro_boda():
+    """
+    Ejecuta el asistente interactivo para la planificación integral de una boda.
+    
+    Este es el motor principal de la interfaz de usuario. Realiza las siguientes acciones:
+    1. Carga las bases de datos desde archivos JSON (Lugares, Personal, Inventario, etc.).
+    2. Registra los datos del cliente y valida su presupuesto y número de invitados.
+    3. Gestiona la selección del lugar verificando disponibilidad de fechas y horarios.
+    4. Permite la contratación de personal y servicios de catálogo (Catering y Música),
+       aplicando reglas de negocio, seguridad y restricciones de exclusión mutua.
+    5. Calcula la cotización final incluyendo comisiones de agencia e impuestos.
+    6. Confirma la reserva bloqueando los recursos y generando un ticket físico (.txt).
+
+    No recibe parámetros de entrada y no retorna valores, ya que gestiona la 
+    persistencia directamente a través de funciones auxiliares.
+    """
+
     fg.limpiar_pantalla()
     print("==========================================")
     print("   BIENVENIDO AL SISTEMA WEDDING PLANNER  ")
@@ -28,6 +44,15 @@ def ejecutar_registro_boda():
     print("--- PASO 1: REGISTRO DEL CLIENTE ---")
 
     id_cliente = input("Ingrese el ID único del cliente: ")
+    # --- AQUÍ VA LA VALIDACIÓN ---
+    id_existe = any(c['id_cliente'] == id_cliente for c in lista_clientes)
+
+    if id_existe:
+        print(f"\n⚠️ ERROR: El ID '{id_cliente}' ya está registrado.")
+        print("No se puede duplicar clientes. Volviendo al menú...")
+        input("Presione Enter para continuar...")
+        return # Esto detiene el registro y te saca al menú principal
+
     nombre_usuario = input("Ingrese el nombre completo del cliente: ")
 
     while True:
@@ -89,22 +114,22 @@ def ejecutar_registro_boda():
 
     # --- PASO 2: SELECCIÓN DE LUGAR ---
     fg.limpiar_pantalla()
-    
+
     # Ahora recibimos dos variables
     lugares_libres, sugerencias = fg.get_lugares_disponibles(fecha_str, lista_lugares, h_inicio, h_fin, invitados_val)
     
     if not lugares_libres:
         print(f"❌ No hay lugares disponibles para el {fecha_str} a esa hora.")
-        
+
         if sugerencias:
             print("\n💡 SUGERENCIAS DEL SISTEMA INTELIGENTE:")
             for sug in sugerencias:
                 print(f"   -> El lugar '{sug['nombre']}' está libre el día {sug['fecha']}")
-        
+
         print("\nIntente con otra fecha o lugar.")
         input("Presione Enter para salir...")
         return
-    
+
     fg.mostar_lugares(lugares_libres)
 
     id_lug = int(input("Seleccione ID del lugar: "))
@@ -117,9 +142,9 @@ def ejecutar_registro_boda():
 
     # --- PASO 3: SELECCIÓN DE PERSONAL ---
     print("\n--- PASO 4: SELECCIÓN DE PERSONAL ---")
-    tipo_a_buscar = input("¿Qué tipo de personal busca? (Música/Fotógrafa/etc): ")
+    tipo_buscado= input("¿Qué tipo de personal busca? (Música/Fotógrafa/etc): ")
 
-    pers_libres = fg.get_personal_disponible(tipo_a_buscar, lista_personal, fecha_str, h_inicio, h_fin)
+    pers_libres = fg.get_personal_disponible(tipo_buscado, lista_personal, fecha_str, h_inicio, h_fin)
     fg.mostrar_personal(pers_libres)
 
     personal_contratado = []
@@ -140,11 +165,39 @@ def ejecutar_registro_boda():
     # --- PASO 4: SELECCIÓN DE SERVICIOS (Catering y Música Extra) ---
     servicios_elegidos = []
 
-    # --- 4.1 Bucle para Catering ---
+    # --- 4.1 Bucle para Catering ---  
     fg.limpiar_pantalla()
     print("--- PASO 4.1: MENÚ DE CATERING ---")
-    for p in lista_catering:
-        print(f"ID: {p['id_item']} | {p['nombre']} | Precio: ${p['precio_unitario']}")
+    if tipo_buscado.lower() in ["catering", "todos"]:
+        fg.limpiar_pantalla()
+        print("--- PASO 4.1: MENÚ DE CATERING ---")
+        for p in lista_catering:
+            print(f"ID: {p['id_item']} | {p['nombre']} | Precio: ${p['precio_unidad']}")
+
+        while True:
+            op = input("\nID del plato (o '0' para pasar a música): ")
+            if op == '0':
+                break
+
+            try:
+                id_ingresado = int(op)
+                plato = next((x for x in lista_catering if x['id_item'] == id_ingresado), None)
+
+                if plato:
+                    cant = int(input(f"¿Cuántas unidades de {plato['nombre']}?: "))
+                    recurso = next((i for i in lista_inventario if i['nombre'].lower() in plato['nombre'].lower()), None)
+
+                    if recurso and recurso['cantidad'] < cant:
+                        print(f"❌ Stock insuficiente. Solo quedan {recurso['cantidad']} unidades.")
+                    else:
+                        item = ItemReserva(plato['id_item'], plato['nombre'], plato['precio_unidad'], cant)
+                        servicios_elegidos.append(item)
+                        print(f"✅ {plato['nombre']} añadido.")
+                else:
+                    print("❌ ID no encontrado.")
+            except ValueError:
+                print("⚠️ Ingrese solo números.")
+
 
     while True:
         op = input("\nID del plato (o '0' para pasar a música): ")
@@ -161,12 +214,12 @@ def ejecutar_registro_boda():
                 # --- VALIDACIÓN DE INVENTARIO ---
                 # Buscamos si el nombre del plato coincide con algo en el inventario (ej: "Vino", "Sillas")
                 recurso = next((i for i in lista_inventario if i['nombre'].lower() in plato['nombre'].lower()), None)
-                
+
                 if recurso and recurso['cantidad'] < cant:
                     print(f"❌ Stock insuficiente. Solo quedan {recurso['cantidad']} unidades de {recurso['nombre']}.")
                 else:
                     # Si hay stock (o no requiere inventario), lo añadimos
-                    item = ItemReserva(plato['id_item'], plato['nombre'], plato['precio_unitario'], cant)
+                    item = ItemReserva(plato['id_item'], plato['nombre'], plato['precio_unidad'], cant)
                     servicios_elegidos.append(item)
                     print(f"✅ {plato['nombre']} añadido.")
             else:
@@ -177,37 +230,40 @@ def ejecutar_registro_boda():
     # --- 4.2 Bucle para Música ---
     fg.limpiar_pantalla()
     print("\n--- PASO 4.2: MENÚ DE MÚSICA ---")
-    for m in lista_musica:
-        print(f"ID: {m['id_item']} | {m['nombre']} | Precio: ${m['precio_unitario']}")
+    if tipo_buscado.lower() in ["catering", "todos"]:
+        for m in lista_musica:
+            print(f"ID: {m['id_item']} | {m['nombre']} | Precio: ${m['precio_unidad']}")
 
-    while True:
-        om = input("\nID del servicio musical (o '0' para finalizar): ")
-        if om == '0': 
-            break
+        while True:
+            om = input("\nID del servicio musical (o '0' para finalizar): ")
+            if om == '0':
+                break
 
-        try:
-            id_m = int(om)
-            musico = next((x for x in lista_musica if x['id_item'] == id_m), None)
+            try:
+                id_m = int(om)
+                musico = next((x for x in lista_musica if x['id_item'] == id_m), None)
 
-            if musico:
-                cant = int(input(f"¿Cuántas unidades de {musico['nombre']}?: "))
+                if musico:
+                    cant = int(input(f"¿Cuántas unidades de {musico['nombre']}?: "))
                 
                 # Validación de inventario para música (ej: si tienes límite de 'Altavoces' o 'Micrófonos')
-                recurso_m = next((i for i in lista_inventario if i['nombre'].lower() in musico['nombre'].lower()), None)
+                    recurso_m = next((i for i in lista_inventario if i['nombre'].lower() in musico['nombre'].lower()), None)
 
-                if recurso_m and recurso_m['cantidad'] < cant:
-                    print(f"❌ Stock insuficiente de {recurso_m['nombre']}.")
+                    if recurso_m and recurso_m['cantidad'] < cant:
+                        print(f"❌ Stock insuficiente de {recurso_m['nombre']}.")
+                    else:
+                        item = ItemReserva(musico['id_item'], musico['nombre'], musico['precio_unidad'], cant)
+                        servicios_elegidos.append(item)
+                        print(f"✅ {musico['nombre']} añadido.")
                 else:
-                    item = ItemReserva(musico['id_item'], musico['nombre'], musico['precio_unitario'], cant)
-                    servicios_elegidos.append(item)
-                    print(f"✅ {musico['nombre']} añadido.")
-            else:
-                print("❌ ID no encontrado.")
-        except ValueError:
-            print("⚠️ Por favor, ingresa solo números.")
+                    print("❌ ID no encontrado.")
+            except ValueError:
+                print("⚠️ Por favor, ingresa solo números.")
 
     # --- PASO 4.3: VALIDACIÓN INTELIGENTE ---
-    valido, mensaje = fg.validar_restricciones_inteligentes(personal_contratado, servicios_elegidos, lugar_seleccionado)
+    valido, mensaje = fg.validar_restricciones_inteligentes(personal_contratado,
+                                                            servicios_elegidos,
+                                                            lugar_seleccionado)
 
     if not valido:
         print("\n" + "!"*40)
@@ -225,7 +281,7 @@ def ejecutar_registro_boda():
         personal_contratado,
         servicios_elegidos,
         fecha_str,
-        h_inicio,  
+        h_inicio,
         h_fin
     )
 
@@ -244,7 +300,7 @@ def ejecutar_registro_boda():
         # Generar archivos finales
         fg.guardar_reserva_json(cotizacion)
         # fg.generar_ticket(...) # Si tienes la función habilitada
-        
+
         print("\n✅ ¡Boda planificada y recursos bloqueados con éxito!")
         # 3. GENERACIÓN DEL TICKET TXT (Lo que te faltaba)
         # Usamos los datos calculados en 'cotizacion'
@@ -258,11 +314,11 @@ def ejecutar_registro_boda():
             cotizacion['total_final'],
             fecha_boda # El objeto datetime para que el ticket ponga la fecha bonita
         )
-        
+
         print("\n✅ ¡Boda planificada con éxito!")
         print("📄 Se ha generado 'resumen_boda.txt' con todos los detalles.")
     else:
         print("\nOpciones descartadas. Volviendo al menú...")
 
 if __name__ == "__main__":
-    ejecutar_registro_boda()      
+    ejecutar_registro_boda()

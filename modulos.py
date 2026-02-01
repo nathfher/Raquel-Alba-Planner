@@ -75,10 +75,10 @@ class ItemReserva:
     Esta clase actúa como un vínculo entre el catálogo general y una boda específica,
     permitiendo calcular costos según la demanda (ej. 100 platos de comida).
     """
-    def __init__(self, id_item_reserva, nombre, precio_unitario, cantidad_requerida):
+    def __init__(self, id_item_reserva, nombre, precio_unidad, cantidad_requerida):
         self.id_item_reserva = id_item_reserva
         self.nombre = nombre
-        self.precio_unitario = precio_unitario
+        self.precio_unidad = precio_unidad
         self.cantidad_requerida = cantidad_requerida
 
     def calcular_subtotal(self):
@@ -88,7 +88,7 @@ class ItemReserva:
         Returns:
             float: El subtotal calculado para este servicio.
         """
-        return self.precio_unitario * self.cantidad_requerida
+        return self.precio_unidad * self.cantidad_requerida
 
     def to_dict(self):
         """Convierte el item de reserva a diccionario."""

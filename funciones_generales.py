@@ -170,17 +170,28 @@ def get_inventario_disponibles(id_lugar,fecha_evento,lista_lugares):
             inventario_libre.append(objeto)
     return inventario_libre
 
-def hay_conflicto_horario(reserva, fecha_nueva, h_ini_nueva, h_fin_nueva):
+def hay_conflicto_horario(lista_reservas, fecha_nueva, h_ini_nueva, h_fin_nueva):
     """
-    Aplica la lógica de colisión de intervalos:
-    Dos eventos en la misma fecha chocan si el inicio de uno es previo al fin 
-    del otro y el fin de uno es posterior al inicio del otro.
-    Retorna True si hay solapamiento, False si el horario está libre.
+    Comprueba si el nuevo horario choca con las reservas existentes.
     """
-    if reserva['fecha'] == fecha_nueva:
-        if h_ini_nueva < reserva['fin'] and h_fin_nueva > reserva['inicio']:
-            return True
-    return False
+    for reserva in lista_reservas:
+        # PRIMERO: Nos aseguramos de que 'reserva' sea un diccionario
+        if not isinstance(reserva, dict):
+            continue 
+            
+        if reserva.get('fecha') == fecha_nueva:
+            # Extraemos horas y convertimos a objetos time para comparar
+            formato = "%H:%M"
+            h_ini_ex = datetime.strptime(reserva['hora_inicio'], formato).time()
+            h_fin_ex = datetime.strptime(reserva['hora_fin'], formato).time()
+            
+            nueva_ini = datetime.strptime(h_ini_nueva, formato).time()
+            nueva_fin = datetime.strptime(h_fin_nueva, formato).time()
+
+            # Lógica de colisión de intervalos
+            if (nueva_ini < h_fin_ex) and (nueva_fin > h_ini_ex):
+                return True # ¡Hay choque!
+    return False 
 
 def get_personal_disponible(tipo_buscado, lista_personal, fecha_evento, h_ini, h_fin):
     """
@@ -286,24 +297,15 @@ def calcular_costo_personal(lista_contratados):
     return sueldo
 
 
-def calcular_costo_inventario(lista_inventario):
+def calcular_costo_inventario(lista_items):
     """
-    Calcula el costo total de los insumos y objetos (catering, mobiliario, etc.).
-    
-    Multiplica el precio unitario por la cantidad requerida de cada item. 
-    Utiliza el método .get() para evitar errores si alguna propiedad no está 
-    definida en el diccionario del objeto.
+    Suma el subtotal de todos los servicios elegidos (Catering y Música).
     """
-    suma_total = 0
-    for i in lista_inventario:
-        # Buscamos los valores en el diccionario
-        # Si la llave no existe, usamos 0 para que no de error
-        precio = i.get('precio_unitario', 0)
-        cantidad = i.get('cantidad_requerida', 0)
-
-        suma_total += (precio * cantidad)
-
-    return suma_total
+    total = 0
+    for i in lista_items:
+        # Como 'i' es un objeto de clase ItemReserva, usamos sus funciones
+        total += i.calcular_subtotal() 
+    return total
 
 def calculate_total(costo_inv: float,
                     costo_pers:float,
@@ -414,7 +416,7 @@ def liberar_recursos(cotizacion, lista_lugares, lista_personal, lista_inventario
 def approve_cotizacion(cotizacion, lista_lugares, lista_personal,lista_inventario):
     """Evita reservas accidentales, avisa si se gaurda la cot o no con bool"""
     print(f"RESUMEN DE COTIZACIÓN PARA: {cotizacion['cliente']}")
-    print(f"TOTAL A PAGAR: ${cotizacion['total']}")
+    print(f"TOTAL A PAGAR: ${cotizacion['total_final']}")
 
     confirmar = input("¿Desea confirmar y aprobar esta boda? (S/N): ").lower()
 
