@@ -164,143 +164,77 @@ def ejecutar_registro_boda():
         except ValueError:
             print("❌ Por favor, introduce un número válido.")
 
-    # --- PASO 3: CONTRATACIÓN ---
+    # --- PREPARACIÓN DE LISTAS ---
     personal_contratado = []
-    
-    while True:
-        fg.limpiar_pantalla()
-        print("--- PASO 3: CONTRATACIÓN ---")
-        print(f"Presupuesto disponible: ${cliente_actual.presupuesto}")
-        tipo_buscado = input("\n¿Qué busca? (Musica / Gastronomia / 0 para salir): ").lower().strip()
-
-        if tipo_buscado == '0':
-            # Verificamos si al menos contrató algo antes de salir (opcional)
-            print(f"\n👍 Selección terminada. Total personal: {len(personal_contratado)}")
-            break
-
-        # 1. Ruteo lógico para Catálogos (Música y Gastronomía)
-        if tipo_buscado == "musica" or tipo_buscado == "gastronomia":
-            # Definimos el archivo y el título según la elección
-            if tipo_buscado == "musica":
-                print("\n--- PASO 3.1: MENÚ DE MÚSICA ---")
-                archivo = "data/musica.json"
-            else:
-                print("\n--- PASO 3.2: MENÚ DE GASTRONOMÍA ---")
-                archivo = "data/catering.json"
-
-            # Cargamos y mostramos
-            lista_servicios = fg.cargar_json(archivo)
-            fg.mostrar_opciones(lista_servicios)
-
-        # 2. Ruteo lógico para Personal General (Fotografía, Seguridad, etc.)
-        else:
-            # Usamos la variable 'lista_personal' cargada al inicio del programa
-            # Importante: Usar 'fecha_str' que definiste en el Paso 1
-            pers_libres = fg.get_personal_disponible(tipo_buscado, lista_personal, fecha_str, h_ini, h_fin)
-
-            if not pers_libres:
-                print(f"❌ No se encontró personal disponible para '{tipo_buscado}' en ese horario.")
-                input("Presione Enter para intentar con otro oficio...")
-                continue
-
-            fg.mostrar_personal(pers_libres)
-
-            try:
-                id_p = int(input(f"ID del {tipo_buscado} a contratar (0 para volver): "))
-                if id_p == 0:
-                    continue
-
-                # Buscamos y validamos la contratación
-                dict_trabajador = fg.contratar_personal(lista_personal, id_p)
-
-                if dict_trabajador:
-                    # Evitar duplicados en la lista de contratación actual
-                    if any(p.id_personal == dict_trabajador['id_personal'] for p in personal_contratado):
-                        print("⚠️ Ya has añadido a esta persona a la lista de contratación.")
-                    else:
-                        # Creamos el objeto Personal y lo añadimos a la lista
-                        p_obj = Personal(
-                            dict_trabajador['id_personal'],
-                            dict_trabajador['nombre'],
-                            dict_trabajador['oficio'],
-                            dict_trabajador['sueldo']
-                        )
-                        personal_contratado.append(p_obj)
-                        print(f"✅ {p_obj.nombre} ha sido añadido exitosamente.")
-                else:
-                    print("❌ ID no encontrado en la lista de personal.")
-
-            except ValueError:
-                print("⚠️ Error: Debe ingresar un número de ID válido.")
-
-            input("\nPresione Enter para continuar...")
-    # --- PASO 4: SELECCIÓN DE SERVICIOS (Catering y Música Extra) ---
     servicios_elegidos = []
 
-    # --- 4.1 Bucle para Catering ---
-    fg.limpiar_pantalla()
-    print("--- PASO 4.1: MENÚ DE CATERING ---")
-    if tipo_buscado.lower().strip() in ["catering", "todos"]:
+    # --- PASO 3: CONTRATACIÓN DE PERSONAL ---
+    while True:
         fg.limpiar_pantalla()
-        print("--- PASO 4.1: MENÚ DE CATERING ---")
-        for p in lista_catering:
-            print(f"ID: {p['id_item']} | {p['nombre']} | Precio: ${p['precio_unidad']}")
+        print(f"--- PASO 3: CONTRATACIÓN DE PERSONAL (Presupuesto: ${cliente_actual.presupuesto}) ---")
+        tipo = input("\n¿Qué oficio busca? (Fotografia, Seguridad, etc. / '0' para continuar): ").lower().strip()
 
-        while True:
-            op = input("\nID del plato (o '0' para pasar a música): ")
-            if op == '0':
-                break
-            try:
-                id_ingresado = int(op)
-                plato = next((x for x in lista_catering if x['id_item'] == id_ingresado), None)
-                if plato:
-                    cant = int(input(f"¿Cuántas unidades de {plato['nombre']}?: "))
-                    # Validación de inventario
-                    recurso = next((i for i in lista_inventario if i['nombre'].lower() in plato['nombre'].lower()), None)
-                    if recurso and recurso['cantidad'] < cant:
-                        print(f"❌ Stock insuficiente. Solo quedan {recurso['cantidad']} unidades.")
-                    else:
-                        item = ItemReserva(plato['id_item'], plato['nombre'], plato['precio_unidad'], cant)
-                        servicios_elegidos.append(item)
-                        print(f"✅ {plato['nombre']} añadido.")
+        if tipo == '0': break
+
+        # Búsqueda de personal en personal.json
+        pers_libres = fg.get_personal_disponible(tipo, lista_personal, fecha_str, h_ini, h_fin)
+
+        if not pers_libres:
+            print(f"❌ No hay {tipo} disponible en ese horario.")
+            input("Pulse Enter...")
+            continue
+
+        fg.mostrar_personal(pers_libres)
+        try:
+            id_p = int(input(f"ID del {tipo} a contratar (0 para volver): "))
+            if id_p == 0: continue
+
+            dict_p = fg.contratar_personal(lista_personal, id_p)
+            if dict_p:
+                if any(p.id_personal == dict_p['id_personal'] for p in personal_contratado):
+                    print("⚠️ Ya contratado.")
                 else:
-                    print("❌ ID no encontrado.")
-            except ValueError:
-                print("⚠️ Ingrese solo números.")
+                    personal_contratado.append(Personal(dict_p['id_personal'], dict_p['nombre'], dict_p['oficio'], dict_p['sueldo']))
+                    print(f"✅ {dict_p['nombre']} añadido.")
+            else: print("❌ ID no válido.")
+        except ValueError: print("⚠️ Ingrese un número.")
+        input("\nPresione Enter...")
 
-    # --- 4.2 Bucle para Música ---
-    fg.limpiar_pantalla()
-    print("\n--- PASO 4.2: MENÚ DE MÚSICA ---")
-    if tipo_buscado.lower().strip() in ["musica", "todos"]:
-        for m in lista_musica:
-            print(f"ID: {m['id_item']} | {m['nombre']} | Precio: ${m['precio_unidad']}")
+    # --- PASO 4: SELECCIÓN DE SERVICIOS (CATÁLOGOS) ---
+    # Definimos los catálogos para procesarlos en un solo bucle limpio
+    catalogos = [
+        {"nombre": "CATERING", "lista": lista_catering},
+        {"nombre": "MÚSICA", "lista": lista_musica}
+    ]
+
+    for cat in catalogos:
+        fg.limpiar_pantalla()
+        print(f"--- PASO 4: MENÚ DE {cat['nombre']} ---")
+        for item in cat['lista']:
+            print(f"ID: {item['id_item']} | {item['nombre']} | ${item['precio_unidad']}")
 
         while True:
-            om = input("\nID del servicio musical (o '0' para finalizar): ")
-            if om == '0':
-                break
-
+            op = input(f"\nID de {cat['nombre']} (o '0' para siguiente): ")
+            if op == '0': break
+            
             try:
-                id_m = int(om)
-                musico = next((x for x in lista_musica if x['id_item'] == id_m), None)
-
-                if musico:
-                    cant = int(input(f"¿Cuántas unidades de {musico['nombre']}?: "))
+                id_sel = int(op)
+                seleccionado = next((x for x in cat['lista'] if x['id_item'] == id_sel), None)
                 
-                # Validación de inventario para música (ej: si tienes límite de 'Altavoces' o 'Micrófonos')
-                    recurso_m = next((i for i in lista_inventario if i['nombre'].lower() in musico['nombre'].lower()), None)
-
-                    if recurso_m and recurso_m['cantidad'] < cant:
-                        print(f"❌ Stock insuficiente de {recurso_m['nombre']}.")
+                if seleccionado:
+                    cant = int(input(f"¿Cantidad de {seleccionado['nombre']}?: "))
+                    
+                    # Validación de Inventario unificada
+                    recurso = next((i for i in lista_inventario if i['nombre'].lower() in seleccionado['nombre'].lower()), None)
+                    
+                    if recurso and recurso['cantidad'] < cant:
+                        print(f"❌ Stock insuficiente. Solo quedan {recurso['cantidad']}.")
                     else:
-                        item = ItemReserva(musico['id_item'], musico['nombre'], musico['precio_unidad'], cant)
-                        servicios_elegidos.append(item)
-                        print(f"✅ {musico['nombre']} añadido.")
+                        servicios_elegidos.append(ItemReserva(seleccionado['id_item'], seleccionado['nombre'], seleccionado['precio_unidad'], cant))
+                        print(f"✅ {seleccionado['nombre']} añadido.")
                 else:
                     print("❌ ID no encontrado.")
-            except ValueError:
-                print("⚠️ Por favor, ingresa solo números.")
-
+            except ValueError: print("⚠️ Ingrese solo números.")
     # --- PASO 4.3: VALIDACIÓN INTELIGENTE ---
     valido, mensaje = fg.validar_restricciones_inteligentes(personal_contratado,
                                                             servicios_elegidos,
