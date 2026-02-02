@@ -35,7 +35,7 @@
         "id_personal": 5,
         "nombre": "Roberto Juez",
         "oficio": "Maestro de Ceremonias",
-        "categoria": "ceremonia",
+        "categoria": "oficiante",
         "sueldo": 400,
         "fechas_ocupadas": []
     },
@@ -69,6 +69,14 @@
         "oficio": "Sommelier / Barman especializado",
         "categoria": "barman",
         "sueldo": 450,
+        "fechas_ocupadas": []
+    },
+    {
+        "id_personal": 10,
+        "nombre": "Miriam Ochoa",
+        "oficio": "Wedding Planner",
+        "categoria": "planificador",
+        "sueldo": 1000,
         "fechas_ocupadas": []
     }
 ]

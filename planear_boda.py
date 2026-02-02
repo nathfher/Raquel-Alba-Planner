@@ -43,7 +43,15 @@ def ejecutar_registro_boda():
     fg.limpiar_pantalla()
     print("--- PASO 1: REGISTRO DEL CLIENTE ---")
 
-    id_cliente = input("Ingrese el ID único del cliente: ")
+    while True:
+        id_input = input("Ingrese el ID único del cliente (solo números): ")
+        try:
+            # Intentamos convertir la entrada a entero
+            id_cliente = int(id_input)
+            break  # Si tiene éxito, rompemos el bucle y continuamos
+        except ValueError:
+            # Si ocurre un error de valor (puso letras), mostramos aviso
+            print("❌ Error: El ID debe ser un número entero. Intente de nuevo.")
     # --- AQUÍ VA LA VALIDACIÓN ---
     id_existe = any(c['id_cliente'] == id_cliente for c in lista_clientes)
 
@@ -157,7 +165,7 @@ def ejecutar_registro_boda():
                     print(f"✅ Sede confirmada: {lugar_elegido['nombre']}")
                 else:
                     print(f"❌ ¡Presupuesto insuficiente! El salón cuesta ${lugar_seleccionado['precio']} y solo tienes ${cliente_actual.presupuesto}.")
-                    print("Por favor, elige uno más barato.")
+                    print("Por favor, elija un lugar acorde a su presupuesto.")
             else:
                 print("❌ ID no encontrado en la lista de salones disponibles.")
             
@@ -172,9 +180,10 @@ def ejecutar_registro_boda():
     while True:
         fg.limpiar_pantalla()
         print(f"--- PASO 3: CONTRATACIÓN DE PERSONAL (Presupuesto: ${cliente_actual.presupuesto}) ---")
-        tipo = input("\n¿Qué oficio busca? (Fotografia, Seguridad, etc. / '0' para continuar): ").lower().strip()
+        tipo = input("\n¿Qué oficio busca? (Fotografia, Seguridad, Estetica, Musica, Planificador, Decoracion o Barman / '0' para continuar): ").lower().strip()
 
-        if tipo == '0': break
+        if tipo == '0': 
+            break
 
         # Búsqueda de personal en personal.json
         pers_libres = fg.get_personal_disponible(tipo, lista_personal, fecha_str, h_ini, h_fin)
