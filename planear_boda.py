@@ -141,27 +141,45 @@ def ejecutar_registro_boda():
         return
 
     # --- PASO 3: SELECCIÓN DE PERSONAL ---
-    print("\n--- PASO 4: SELECCIÓN DE PERSONAL ---")
-    tipo_buscado= input("¿Qué tipo de personal busca? (Música/Fotógrafa/etc): ")
-
-    pers_libres = fg.get_personal_disponible(tipo_buscado, lista_personal, fecha_str, h_inicio, h_fin)
-    fg.mostrar_personal(pers_libres)
-
+    print("\n--- PASO 3: SELECCIÓN DE PERSONAL ---")
     personal_contratado = []
-    if pers_libres:
-        id_p = int(input("ID del trabajador a contratar: "))
-        dict_trabajador = fg.contratar_personal(lista_personal, id_p)
 
-        if dict_trabajador:
-            # Convertimos el diccionario a Objeto Personal para que build_cotizacion funcione
-            p_obj = Personal(
-                dict_trabajador['id_personal'],
-                dict_trabajador['nombre'],
-                dict_trabajador['oficio'],
-                dict_trabajador['sueldo']
-            )
-            personal_contratado.append(p_obj)
-            print(f"✅ {p_obj.nombre} añadido a la boda.")
+    while True:
+        tipo_buscado = input("\n¿Qué tipo de personal busca? (Música/Fotógrafa/etc) o '0' para continuar: ").strip().lower()
+        
+        if tipo_buscado == '0':
+            break
+
+        # Buscamos personal disponible
+        pers_libres = fg.get_personal_disponible(tipo_buscado, lista_personal, fecha_str, h_inicio, h_fin)
+        
+        if not pers_libres:
+            print(f"❌ No se encontró personal disponible para '{tipo_buscado}' en ese horario.")
+            continue
+
+        fg.mostrar_personal(pers_libres)
+
+        try:
+            id_p = int(input("ID del trabajador a contratar (o '0' para buscar otro oficio): "))
+            if id_p == 0: continue
+
+            dict_trabajador = fg.contratar_personal(lista_personal, id_p)
+
+            if dict_trabajador:
+                # Validamos que no esté ya contratado en esta sesión
+                if any(p.id_personal == dict_trabajador['id_personal'] for p in personal_contratado):
+                    print("⚠️ Este trabajador ya ha sido añadido a la planificación.")
+                else:
+                    p_obj = Personal(
+                        dict_trabajador['id_personal'],
+                        dict_trabajador['nombre'],
+                        dict_trabajador['oficio'],
+                        dict_trabajador['sueldo']
+                    )
+                    personal_contratado.append(p_obj)
+                    print(f"✅ {p_obj.nombre} ({p_obj.oficio}) añadido a la boda.")
+        except ValueError:
+            print("⚠️ Por favor, ingresa un número de ID válido.")
     # --- PASO 4: SELECCIÓN DE SERVICIOS (Catering y Música Extra) ---
     servicios_elegidos = []
 
