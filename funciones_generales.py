@@ -29,16 +29,6 @@ def ensure_file_exist(ruta,data_inicial):
                 json.dump({},f,indent=4)
     return data_inicial
 
-def guardar_elemento(mi_elemento, list_elements, nombre_archivo):
-    """
-    Convierte un objeto (Cliente, Lugar, etc.) a diccionario y lo guarda en una lista.
-    Luego actualiza el archivo JSON correspondiente para que los cambios sean permanentes.
-    """ 
-    nuevo_elemento_dict = vars(mi_elemento).copy() #elemento = cliente,lugar,trabajador
-    list_elements.append(nuevo_elemento_dict)
-    write_json(nombre_archivo, list_elements)
-    print(f"Registro: {mi_elemento.nombre} guardado en {nombre_archivo} con éxito.")
-
 def buscar_elemento_id(id_buscado,list_elements):
     """
     Busca un elemento específico dentro de una lista usando su ID único.
@@ -68,92 +58,7 @@ def actualizar_element(id_element,list_elements,datos_nuevos,element,nombre_arch
     print(f"'{element}': {id_element} actualizado.")
     return datos_antiguos
 
-def eliminar_elemento(id_eliminar,list_elements,nombre_archivo,llave_id):
-    """
-    Elimina un registro de la lista (un cliente, lugar o trabajador).
-    Crea una nueva lista que excluye al elemento con el ID indicado y 
-    actualiza el archivo JSON para que el borrado sea permanente.
-    """
-    lista_nueva = []
-    element_a_borrar = buscar_elemento_id(id_eliminar,list_elements)
-    if element_a_borrar is None:
-        return list_elements
-    name_element = element_a_borrar['nombre']
-    for i in list_elements:
-        if i[llave_id] != id_eliminar:
-            lista_nueva.append(i)
-    write_json(nombre_archivo,lista_nueva)
-    print(f'Se ha eliminado a {name_element}, ID: {id_eliminar}')
-    return lista_nueva
 #llave_fecha seria  ocuapdas en personal y reservadas en lugar
-def reservar_fecha(id_elemento,list_elements,fecha_evento,llave_fechas,nombre_archivo):
-    """
-    Verifica si una fecha está libre para un lugar o trabajador.
-    Si la fecha no está en la lista de 'fechas_ocupadas', la agrega y guarda 
-    el cambio en el JSON. Si ya está ocupada, avisa del conflicto.
-    """
-    elemento_completo = buscar_elemento_id(id_elemento,list_elements) #me devuelve el diccionario
-    if elemento_completo is None:
-        print("El Id introducido no existe")
-        return False
-    if fecha_evento in elemento_completo[llave_fechas]:
-        print(" Fecha ocupada")
-        return False
-    else:
-        elemento_completo[llave_fechas].append(fecha_evento)
-        print("¡Reserva guardada!")
-        write_json(nombre_archivo,list_elements)
-
-def eliminar_fecha(id_elemento,list_elements,fecha_evento,llave_fechas,nombre_archivo):
-    """
-    Libera una fecha previamente reservada.
-    Busca la fecha en la lista de ocupación del elemento y la elimina, 
-    permitiendo que ese lugar o trabajador vuelva a estar disponible ese día.
-    """
-    elemento_completo = buscar_elemento_id(id_elemento,list_elements) #me devuelve el diccionario
-    if elemento_completo is None:
-        print("El Id no existe")
-        return False
-    if fecha_evento in elemento_completo[llave_fechas]:
-        elemento_completo[llave_fechas].remove(fecha_evento)
-        print("¡Reserva eliminada!")
-        write_json(nombre_archivo,list_elements)
-        return True
-    return False
-
-def mostar_lugares(lista_encontrada):
-    """
-    Muestra en consola de forma detallada los salones que cumplen con los requisitos.
-    
-    Imprime el ID (necesario para la selección), el nombre del salón, 
-    su capacidad máxima de invitados y el costo base del alquiler. 
-    Si la lista está vacía, informa que no hay opciones para la fecha solicitada.
-    """
-    if not lista_encontrada:
-        print("No hay salones disponibles para esta fecha")
-    else:
-        print("SALONES DISPONIBLES")
-        for l in lista_encontrada:
-            print(f"ID: {l['id_lugar']} | {l['nombre']}"
-                f"Capacidad: {l['capacidad']} personas | Precio: ${l['precio']}")
-
-        print('')
-
-def mostrar_personal(lista_encontrada):
-    """
-    Imprime en consola de forma tabular la lista de trabajadores disponibles.
-    Muestra el ID, nombre y sueldo de cada profesional encontrado para facilitar 
-    la selección al usuario.
-    """
-    if not lista_encontrada:
-        print("No se encontró personal disponible")
-    else:
-        print("PROFESIONALES DISPONIBLES")
-        for p in lista_encontrada:
-            # Usamos f-strings para que el print sea limpio
-            print(f"ID: {p['id_personal']} | Nombre: {p['nombre']} | Costo: ${p['sueldo']}")
-        print('')
-
 
 def get_inventario_disponibles(id_lugar,fecha_evento,lista_lugares):
     """
@@ -388,32 +293,6 @@ def guardar_cotizacion(cotizacion_reciente, list_cotizaciones):
     print("Cotización guardada en el historial.")
 
 
-def liberar_recursos(cotizacion, lista_lugares, lista_personal, lista_inventario):
-    """Limpia el sistema y devuelve stock al inventario"""
-    fecha = cotizacion['fecha']
-
-    # 1. Liberar el lugar
-    id_lugar = cotizacion['id_lugar']
-    eliminar_fecha(id_lugar, lista_lugares, fecha, 'fechas_ocupadas', 'lugares.json')
-
-    # 2. Liberar al personal
-    for trabajador in cotizacion['personal_contratado']:
-        # Si guardaste el personal como objeto usa trabajador.id_personal
-        # Si lo guardaste como diccionario usa trabajador['id_personal']
-        id_trabajador = trabajador['id_personal']
-        eliminar_fecha(id_trabajador, lista_personal, fecha, 'fechas_ocupadas', 'personal.json')
-
-    # 3. Devolver al inventario (AQUÍ ES DONDE SE QUITA EL ROJO)
-    # Usamos 'lista_inventario' que es el parámetro que declaramos arriba
-    for servicio in cotizacion['servicios_elegidos']:
-        for item_inv in lista_inventario:
-            # Comparamos nombres para devolver las cantidades
-            if item_inv['nombre'].lower() in servicio['nombre'].lower():
-                item_inv['cantidad'] += servicio['cantidad']
-
-    # Guardamos los cambios en el archivo
-    write_json('inventario.json', lista_inventario)
-
 def approve_cotizacion(cotizacion, lista_lugares, lista_personal,lista_inventario):
     """Evita reservas accidentales, avisa si se gaurda la cot o no con bool"""
     print(f"RESUMEN DE COTIZACIÓN PARA: {cotizacion['cliente']}")
@@ -448,32 +327,6 @@ def bloquear_fecha(id_element,list_element,fecha_nueva):
         print(f"❌ Error: La fecha {fecha_nueva} ya está ocupada para {exito_element['nombre']}")
         return False
 
-def reducir_inventario(nombre_buscado, cantidad_a_restar, lista_bodega):
-    """
-    Resta una cantidad específica a un producto del inventario global.
-
-    Args:
-        nombre_buscado (str): El nombre exacto del producto (ej: "Vino Tinto").
-        cantidad_a_restar (int): El número de unidades que se van a usar.
-        lista_bodega (list): La lista de diccionarios que cargaste del JSON.
-
-    Returns:
-        bool: Devuelve True si pudo restar, False si hubo algún problema.
-    """
-    for producto in lista_bodega:
-        # 1. Comparamos texto con texto (muy seguro)
-        if producto['nombre'] == nombre_buscado:
-            # 2. Verificamos que no nos quedemos en negativo
-            if producto['cantidad'] >= cantidad_a_restar:
-                producto['cantidad'] -= cantidad_a_restar
-                print(f"{nombre_buscado} actualizado. Quedan: {producto['cantidad']}")
-                return True
-            else:
-                print(f"No hay suficiente {nombre_buscado} (Solo hay {producto['cantidad']})")
-                return False
-    print(f"El producto '{nombre_buscado}' no existe en el inventario.")
-    return False
-
 def procesar_confirmacion_boda(cotizacion, lista_lugares, lista_personal, lista_inventario):
     # Creamos el bloque horario que se guardará en los archivos
     bloque = {
@@ -499,33 +352,6 @@ def procesar_confirmacion_boda(cotizacion, lista_lugares, lista_personal, lista_
                 inv['cantidad'] -= item.cantidad_requerida
 
     print("¡SISTEMA ACTUALIZADO! Todos los recursos han sido bloqueados.")
-
-def guardar_resumen_txt(nombre_archivo, cliente, lugar, personal, servicios, subtotal, comision, total):
-    with open(nombre_archivo, "w", encoding="utf-8") as f:
-        f.write("==========================================\n")
-        f.write("       RESUMEN DE RESERVA DE BODA        \n")
-        f.write("==========================================\n\n")
-
-        f.write(f"CLIENTE: {cliente.nombre}\n")
-        f.write(f"EMAIL: {cliente.email}\n")
-        f.write(f"INVITADOS: {cliente.invitados}\n\n")
-
-        f.write(f"LUGAR: {lugar['nombre']} (${lugar['costo']})\n\n")
-
-        f.write("PERSONAL CONTRATADO:\n")
-        for p in personal:
-            f.write(f"- {p.nombre} ({p.oficio}): ${p.sueldo}\n")
-
-        f.write("\nSERVICIOS ADICIONALES:\n")
-        for item in servicios:
-            f.write(f"- {item.nombre} (x{item.cantidad_requerida}): ${item.calcular_subtotal()}\n")
-
-        f.write("\n------------------------------------------\n")
-        f.write(f"SUBTOTAL: ${subtotal}\n")
-        f.write(f"COMISIÓN (15%): ${comision}\n")
-        f.write(f"TOTAL FINAL: ${total}\n")
-        f.write("------------------------------------------\n")
-        f.write("\n¡Gracias por confiar en nosotros!")
 
 def limpiar_pantalla():
     # 'nt' es para Windows, 'posix' para Mac o Linux
@@ -554,6 +380,38 @@ def guardar_reserva_json(nueva_boda):
         json.dump(historial, f, indent=4, ensure_ascii=False)
     
     print("✅ La boda se guardó correctamente en el historial.")
+
+def liberar_recursos(cotizacion, lista_lugares, lista_personal, lista_inventario):
+    """
+    Limpia el sistema de forma integral. 
+    Elimina los bloques horarios de lugares/personal y devuelve el stock al inventario.
+    """
+    fecha_boda = cotizacion['fecha']
+
+    # 1. Liberar el lugar (Buscamos el bloque horario específico)
+    lugar = buscar_elemento_id(cotizacion['id_lugar'], lista_lugares)
+    if lugar:
+        # Filtramos la lista para quitar el bloque de esta boda
+        lugar['fechas_ocupadas'] = [f for f in lugar['fechas_ocupadas'] if f['fecha'] != fecha_boda]
+    
+    # 2. Liberar al personal
+    for p_contratado in cotizacion['personal_contratado']:
+        # Buscamos al trabajador en la lista maestra
+        p_maestro = buscar_elemento_id(p_contratado.id_personal, lista_personal)
+        if p_maestro:
+            p_maestro['fechas_ocupadas'] = [f for f in p_maestro['fechas_ocupadas'] if f['fecha'] != fecha_boda]
+
+    # 3. Devolver al inventario
+    for servicio in cotizacion['servicios_elegidos']:
+        for item_inv in lista_inventario:
+            if item_inv['nombre'].lower() in servicio.nombre.lower():
+                item_inv['cantidad'] += servicio.cantidad_requerida
+
+    # 4. Guardado masivo y limpio
+    write_json('data/lugares.json', lista_lugares)
+    write_json('data/personal.json', lista_personal)
+    write_json('data/inventario.json', lista_inventario)
+    print("♻️ Recursos liberados y stock restaurado.")
 
 
 def generar_ticket(cliente, lugar, personal, servicios, subtotal, comision, total, fecha_boda):
@@ -601,44 +459,6 @@ def can_select_lugar(presupuesto_cliente, precio_lugar):
     else:
         return False
 
-def cargar_json(nombre_archivo):
-    """
-    Abre un archivo JSON y devuelve la lista de datos.
-    Si el archivo no existe o está vacío, devuelve una lista vacía.
-    """
-    try:
-        with open(nombre_archivo, 'r', encoding='utf-8') as archivo:
-            return json.load(archivo)
-    except (FileNotFoundError, json.JSONDecodeError):
-        # Si el archivo no existe o tiene un error de formato, no rompemos el programa
-        
-        return []
-
-def mostrar_opciones(lista):
-    """
-    Muestra los servicios de los catálogos de Música o Catering.
-    """
-    if not lista:
-        print("⚠️ No hay opciones disponibles en este catálogo.")
-        return
-
-    print("\n" + "="*30)
-    print("   OPCIONES DISPONIBLES")
-    print("="*30)
-
-    for item in lista:
-        nombre = item.get('nombre', 'Sin nombre')
-        id_item = item.get('id', '??')
-        
-        # Si es catering, buscamos 'precio_persona'
-        if 'precio_persona' in item:
-            print(f"ID: {id_item} | {nombre.ljust(20)} | ${item['precio_persona']} por persona")
-        # Si es música u otro servicio fijo, buscamos 'precio'
-        else:
-            precio = item.get('precio', 0)
-            print(f"ID: {id_item} | {nombre.ljust(20)} | ${precio} (Total)")
-    
-    print("="*30)
 
 def validar_restricciones_inteligentes(personal_contratado, servicios_elegidos, lugar_seleccionado):
     """

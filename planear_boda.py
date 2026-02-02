@@ -145,7 +145,13 @@ def ejecutar_registro_boda():
         input("Presione Enter para salir...")
         return
 
-    fg.mostar_lugares(lugares_libres)
+    print("\n================================")
+    print("      SALONES DISPONIBLES       ")
+    print("================================")
+    for l in lugares_libres:
+        # Mostramos los datos clave para que el cliente decida
+        print(f"ID: {l['id_lugar']} | {l['nombre'].ljust(20)} | Capacidad: {l['capacidad']} pers. | Precio: ${l['precio']}")
+    print("================================\n")
     lugar_elegido = None  # Empezamos sin nada
 
     while lugar_elegido is None:  # Mientras no tengamos un lugar válido...
@@ -193,7 +199,11 @@ def ejecutar_registro_boda():
             input("Pulse Enter...")
             continue
 
-        fg.mostrar_personal(pers_libres)
+        print(f"\n--- {tipo.upper()} DISPONIBLES ---")
+        for p in pers_libres:
+            # Imprimimos directamente los datos del diccionario
+            print(f"ID: {p['id_personal']} | Nombre: {p['nombre']} | Sueldo: ${p['sueldo']}")
+        print("------------------------------")
         try:
             id_p = int(input(f"ID del {tipo} a contratar (0 para volver): "))
             if id_p == 0: continue
