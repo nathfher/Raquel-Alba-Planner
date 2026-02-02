@@ -1,13 +1,13 @@
 [
     {
         "id_lugar": 1,
-        "nombre": "Jardín de los Cerezos",
+        "nombre": "Jard\u00edn de los Cerezos",
         "capacidad": 150,
         "precio": 2500,
         "servicios_incluidos": [
             "Fuente de agua iluminada",
-            "Pérgola de ceremonias",
-            "Iluminación ambiental en árboles"
+            "P\u00e9rgola de ceremonias",
+            "Iluminaci\u00f3n ambiental en \u00e1rboles"
         ],
         "fechas_ocupadas": []
     },
@@ -29,10 +29,12 @@
         "capacidad": 80,
         "precio": 1500,
         "servicios_incluidos": [
-            "Iluminación Guirnalda (Fairytale Lights)",
+            "Iluminaci\u00f3n Guirnalda (Fairytale Lights)",
             "Pista de baile de ristal sobre la piscina",
             "Fogata Lounge con asientos de cuero"
         ],
-        "fechas_ocupadas": []
+        "fechas_ocupadas": [
+            "12/04/2027"
+        ]
     }
 ]

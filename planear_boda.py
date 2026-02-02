@@ -137,14 +137,6 @@ def ejecutar_registro_boda():
     if lugar_seleccionado:
         lugar_elegido = lugar_seleccionado
         print(f"✅ Sede confirmada: {lugar_elegido['nombre']}")
-        # se guarda en el json
-        # 1. Añadimos la fecha a la lista del objeto en memoria
-        if fecha_str not in lugar_elegido['fechas_ocupadas']:
-            lugar_elegido['fechas_ocupadas'].append(fecha_str)
-
-        # 2. Guardamos la lista actualizada en el archivo físico
-        fg.write_json('data/lugares.json', lista_lugares)
-        print("💾 Disponibilidad actualizada en la base de datos.")
     else:
         print("❌ ID no válido o el lugar no estaba en la lista de disponibles.")
         input("\nPresione Enter para salir...")

@@ -193,29 +193,38 @@ def hay_conflicto_horario(lista_reservas, fecha_nueva, h_ini_nueva, h_fin_nueva)
                 return True # ¡Hay choque!
     return False 
 
-def get_personal_disponible(tipo_buscado, lista_personal, fecha_evento, h_ini, h_fin):
-    """
-    Busca trabajadores por oficio (ej. 'Fotógrafo') y valida su agenda.
-    Itera sobre todas las reservas previas del trabajador para asegurar que 
-    ninguna se solape con el rango de horas solicitado para la boda.
-    """
-    personal_disponible = []
+def get_personal_disponible(tipo_buscado, lista_personal, fecha, h_inicio, h_fin):
+    disponibles = []
+    tipo_buscado = tipo_buscado.strip().lower()
 
-    for persona in lista_personal:
-        # 1. Verificamos el oficio (usamos .lower() para evitar errores de mayúsculas)
-        if persona['oficio'].lower() == tipo_buscado.lower():
+    # Convertimos las horas de la boda a objetos comparables
+    formato = "%H:%M"
+    boda_inicio = datetime.strptime(h_inicio, formato).time()
+    boda_fin = datetime.strptime(h_fin, formato).time()
+
+    for p in lista_personal:
+        oficio_json = p['oficio'].strip().lower()
+
+        if tipo_buscado in oficio_json:
+            # Si el trabajador tiene agenda para ese día, revisamos horas
+            agenda_dia = p.get('agenda', {}).get(fecha, [])
 
             conflicto = False
-            # 2. Revisamos sus fechas ocupadas (que ahora son una lista de diccionarios)
-            for reserva in persona['fechas_ocupadas']:
-                if hay_conflicto_horario(reserva, fecha_evento, h_ini, h_fin):
+            for intervalo in agenda_dia:
+                # intervalo es algo como {"inicio": "18:00", "fin": "22:00"}
+                ocupado_ini = datetime.strptime(intervalo['inicio'], formato).time()
+                ocupado_fin = datetime.strptime(intervalo['fin'], formato).time()
+
+                # Lógica de solapamiento: (InicioA < FinB) y (FinA > InicioB)
+                if boda_inicio < ocupado_fin and boda_fin > ocupado_ini:
                     conflicto = True
-                    break # Si choca con una, ya no nos sirve
+                    break
 
             if not conflicto:
-                personal_disponible.append(persona)
+                # Si no hay conflicto de horas o ni siquiera tenía eventos ese día
+                disponibles.append(p)
 
-    return personal_disponible
+    return disponibles
 
 def get_lugares_disponibles(fecha_str, lista_lugares, h_ini, h_fin, invitados):
     """
@@ -312,15 +321,10 @@ def build_cotizacion(cliente, lug_elegido, sel_pers, lista_items, fecha, h_inici
     Construye el objeto maestro de la cotización con toda la metadata del evento.
     
     Realiza las siguientes acciones:
-    1. Valida si el lugar es apto (capacidad y presupuesto).
-    2. Ejecuta los cálculos financieros detallados.
-    3. Registra el bloque horario y calcula la duración del evento.
-    4. Estructura un diccionario final listo para ser guardado o impreso.
+    1. Ejecuta los cálculos financieros detallados.
+    2. Registra el bloque horario y calcula la duración del evento.
+    3. Estructura un diccionario final listo para ser guardado o impreso.
     """
-    
-    if can_select_lugar(lug_elegido, cliente.invitados, cliente.presupuesto) is False:
-        return 'Error: El lugar no cumple los requisitos'
-
     # 1. CÁLCULO DE COSTOS
     costo_inv = calcular_costo_inventario(lista_items)
     costo_pers = calcular_costo_personal(sel_pers)
@@ -380,7 +384,7 @@ def liberar_recursos(cotizacion, lista_lugares, lista_personal, lista_inventario
     for trabajador in cotizacion['personal_contratado']:
         # Si guardaste el personal como objeto usa trabajador.id_personal
         # Si lo guardaste como diccionario usa trabajador['id_personal']
-        id_trabajador = trabajador['id_personal'] 
+        id_trabajador = trabajador['id_personal']
         eliminar_fecha(id_trabajador, lista_personal, fecha, 'fechas_ocupadas', 'personal.json')
 
     # 3. Devolver al inventario (AQUÍ ES DONDE SE QUITA EL ROJO)
@@ -390,7 +394,7 @@ def liberar_recursos(cotizacion, lista_lugares, lista_personal, lista_inventario
             # Comparamos nombres para devolver las cantidades
             if item_inv['nombre'].lower() in servicio['nombre'].lower():
                 item_inv['cantidad'] += servicio['cantidad']
-    
+
     # Guardamos los cambios en el archivo
     write_json('inventario.json', lista_inventario)
 
@@ -518,7 +522,7 @@ def guardar_reserva_json(nueva_boda):
     # 1. Decimos dónde se va a guardar (en la carpeta data)
     nombre_archivo = 'data/historial_reservas.json'
 
-    # 2. Leemos lo que ya hay en el archivo. 
+    # 2. Leemos lo que ya hay en el archivo.
     # Si no existe, historial será una lista vacía []
     historial = ensure_file_exist(nombre_archivo, [])
 
