@@ -133,12 +133,23 @@ def ejecutar_registro_boda():
     fg.mostar_lugares(lugares_libres)
 
     id_lug = int(input("Seleccione ID del lugar: "))
-    lugar_seleccionado = fg.buscar_elemento_id(id_lug, lista_lugares)
+    lugar_seleccionado = next((l for l in lugares_libres if l['id_lugar'] == id_lug), None)
+    if lugar_seleccionado:
+        lugar_elegido = lugar_seleccionado
+        print(f"✅ Sede confirmada: {lugar_elegido['nombre']}")
+        # se guarda en el json
+        # 1. Añadimos la fecha a la lista del objeto en memoria
+        if fecha_str not in lugar_elegido['fechas_ocupadas']:
+            lugar_elegido['fechas_ocupadas'].append(fecha_str)
 
-    # Validación de capacidad y presupuesto
-    if not fg.can_select_lugar(lugar_seleccionado, cliente_actual.invitados, cliente_actual.presupuesto):
+        # 2. Guardamos la lista actualizada en el archivo físico
+        fg.write_json('data/lugares.json', lista_lugares)
+        print("💾 Disponibilidad actualizada en la base de datos.")
+    else:
+        print("❌ ID no válido o el lugar no estaba en la lista de disponibles.")
         input("\nPresione Enter para salir...")
         return
+
 
     # --- PASO 3: SELECCIÓN DE PERSONAL ---
     print("\n--- PASO 3: SELECCIÓN DE PERSONAL ---")
@@ -195,7 +206,7 @@ def ejecutar_registro_boda():
             print("⚠️ Por favor, ingresa un número de ID válido.")
 
     print(f"\n👍 Selección de personal terminada. Total contratados: {len(personal_contratado)}")
-    
+
     # --- PASO 4: SELECCIÓN DE SERVICIOS (Catering y Música Extra) ---
     servicios_elegidos = []
 
