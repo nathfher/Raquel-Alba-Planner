@@ -3,21 +3,6 @@ import funciones_generales as fg
 from modulos import Cliente, Personal, ItemReserva
 
 def ejecutar_registro_boda():
-    """
-    Ejecuta el asistente interactivo para la planificación integral de una boda.
-    
-    Este es el motor principal de la interfaz de usuario. Realiza las siguientes acciones:
-    1. Carga las bases de datos desde archivos JSON (Lugares, Personal, Inventario, etc.).
-    2. Registra los datos del cliente y valida su presupuesto y número de invitados.
-    3. Gestiona la selección del lugar verificando disponibilidad de fechas y horarios.
-    4. Permite la contratación de personal y servicios de catálogo (Catering y Música),
-       aplicando reglas de negocio, seguridad y restricciones de exclusión mutua.
-    5. Calcula la cotización final incluyendo comisiones de agencia e impuestos.
-    6. Confirma la reserva bloqueando los recursos y generando un ticket físico (.txt).
-
-    No recibe parámetros de entrada y no retorna valores, ya que gestiona la 
-    persistencia directamente a través de funciones auxiliares.
-    """
 
     fg.limpiar_pantalla()
     print("==========================================")
@@ -41,105 +26,114 @@ def ejecutar_registro_boda():
     fg.limpiar_pantalla()
     print("--- PASO 1: REGISTRO DEL CLIENTE ---")
 
-    while True:
-        id_input = input("Ingrese el ID único del cliente (solo números): ")
-        try:
-            # Intentamos convertir la entrada a entero
-            id_client = int(id_input)
-            break  # Si tiene éxito, rompemos el bucle y continuamos
-        except ValueError:
-            # Si ocurre un error de valor (puso letras), mostramos aviso
-            print("❌ Error: El ID debe ser un número entero. Intente de nuevo.")
-    # --- AQUÍ VA LA VALIDACIÓN ---
-    id_existe = any(c['id_cliente'] == id_client for c in lista_clientes)
-
-    if id_existe:
-        print(f"\n⚠️ ERROR: El ID '{id_client}' ya está registrado.")
-        print("No se puede duplicar clientes. Volviendo al menú...")
-        input("Presione Enter para continuar...")
-        return # Esto detiene el registro y te saca al menú principal
-    while True:
-        user_name = input("Ingrese el nombre completo del cliente: ").strip()
-        if not user_name:
-            print("❌ Nombre inválido. Intente de nuevo.")
-            continue
-        if user_name.isdigit():
-            print("❌ Nombre inválido. No puede ser solo números.")
-            continue
-        break
-    while True:
-        correo_temp = input("Ingrese el correo electrónico: ")
-        if "@" in correo_temp and len(correo_temp) >= 6:
-            correo_usuario = correo_temp
-            break
-        elif "@" not in correo_temp:
-            print("❌ ¡Correo inválido! Debe contener un símbolo '@'.")
-        elif len(correo_temp) < 6:
-            print("❌ ¡Correo inválido! Debe contener como minimo 6 caracteres.")
-        else:
-            print("❌ ¡Correo inválido! Debe contener un símbolo '@' y un minimo de 6 caracteres.")
-
+    # --- PASO 2: REGISTRO DEL CLIENTE CON RESTRICCIÓN DE ID ---
+    # --- PASO 2: REGISTRO DEL CLIENTE (VERSIÓN ANTIBALAS) ---
     while True:
         try:
-            presupuesto_val = float(input("¿Cuál es el presupuesto máximo?: "))
-            break
-        except ValueError:
-            print("❌ ¡Error! Ingresa un monto de dinero válido.")
+            # 1. VALIDAR ID (1000 - 10000)
+            id_client = int(input("\nIngrese ID del cliente (1000-10000): "))
+            if not 1000 <= id_client <= 10000:
+                print("⚠️ Error: El ID debe estar entre 1000 y 10000.")
+                continue
+            if any(c['id_cliente'] == id_client for c in lista_clientes):
+                print("❌ Este ID ya existe. Use uno diferente.")
+                continue
 
-    while True:
-        try:
-            invitados_val = int(input("¿Cuántos invitados se esperan?: "))
-            break
-        except ValueError:
-            print("❌ ¡Error! Por favor, ingresa un número entero.")
+            # 2. VALIDAR NOMBRE (Mínimo 8 caracteres y sin números)
+            name_client = input("Ingrese nombre completo: ").strip()
+            if len(name_client) < 8 or name_client.isdigit():
+                print("⚠️ Nombre inválido. Debe ser completo (mín. 8 letras) y no numérico.")
+                continue
 
-    # --- REGISTRO DE FECHA Y HORARIOS ---
+            # 3. VALIDAR CORREO (Debe ser @gmail.com)
+            correo_temp = input("Ingrese correo (@gmail.com): ").lower().strip()
+            if not correo_temp.endswith("@gmail.com") or len(correo_temp) < 11:
+                print("❌ Correo inválido. Debe ser una cuenta válida de @gmail.com.")
+                continue
+
+            # 4. VALIDAR INVITADOS (Máximo 350 que es el límite de tus lugares)
+            invitados_val = int(input("¿Cuántos invitados espera? (Máx. 350): "))
+            if invitados_val <= 0:
+                print("⚠️ Debe tener al menos 1 invitado.")
+                continue
+            if invitados_val > 350:
+                print("❌ Lo sentimos. Ninguno de los salones supera la capacidad de 350 personas.")
+                continue
+
+            # 5. VALIDAR PRESUPUESTO (Mínimo razonable, ej: 1000 pesos)
+            presupuesto_val = float(input("¿Presupuesto máximo? (Mínimo $1000): "))
+            if presupuesto_val < 1500:
+                print(
+                    f"Con ${presupuesto_val} no es posible organizar una boda. "
+                    f"El presupuesto mínimo aceptado es de $1500."
+                )
+                continue
+
+            # SI LLEGA AQUÍ, ESTÁ PERFECTO
+            cliente_actual = Cliente(id_client,
+                                    name_client,
+                                    correo_temp,
+                                    invitados_val,
+                                    presupuesto_val)
+            lista_clientes.append(cliente_actual.to_dict())
+            fg.write_json('data/clientes.json', lista_clientes)
+
+            print(f"\n✅ Cliente '{name_client}' registrado exitosamente.")
+            break
+
+        except ValueError:
+            print("❌ Error: Por favor, ingrese números válidos para ID, invitados y presupuesto.")
+
+    # --- PASO 2.1: REGISTRO DE FECHA ---
     while True:
-        fecha_input = input("Ingrese la fecha de la boda (DD/MM/AAAA): ")
+        fecha_input = input("\nIngrese la fecha de la boda (DD/MM/AAAA): ")
         try:
             fecha_boda = datetime.strptime(fecha_input, "%d/%m/%Y")
             if fecha_boda < datetime.now():
-                print("❌ No puedes elegir una fecha pasada.")
-            else:
-                fecha_str = fecha_input # Guardamos el string para las búsquedas
-                break
+                print("❌ No puedes elegir una fecha pasada. ¡Planificamos el futuro!")
+                continue
+            fecha_str = fecha_input
+            break
         except ValueError:
             print("⚠️ Formato incorrecto. Debe ser día/mes/año (ej: 15/05/2026)")
 
-    # --- NUEVO: Captura de Horas (Integrado) ---
+    # --- PASO 2.2: REGISTRO DE HORARIOS ---
     while True:
-        print("\nDefina el horario del evento (Formato 24h):")
-        h_ini = input("Hora de inicio (ej: 14:00 o 14:30): ").strip()
-        h_fin = input("Hora de finalización (ej: 22:00 o 22:30): ").strip()
+        print(f"\nDefina el horario para el {fecha_str} (Formato 24h, ej: 14:00):")
+        h_ini = input("Hora de inicio: ").strip()
+        h_fin = input("Hora de finalización: ").strip()
 
-        # 1. Quitamos los ':' para verificar que no haya letras (como 'helloworld')
-        prueba_ini = h_ini.replace(":", "")
-        prueba_fin = h_fin.replace(":", "")
+        try:
+            # Validamos que el formato sea exactamente HH:MM (evita que pongan solo "14")
+            # strptime lanzará error si no tiene los ':' y los minutos
+            time_ini = datetime.strptime(h_ini, "%H:%M")
+            time_fin = datetime.strptime(h_fin, "%H:%M")
 
-        if prueba_ini.isdigit() and prueba_fin.isdigit():
-            # 2. Convertimos a números SOLO para validar el rango y calcular duración
-            # Tomamos solo los primeros dígitos antes de los ':' para la hora
-            hora_i = int(h_ini.split(":")[0])
-            hora_f = int(h_fin.split(":")[0])
+            if time_ini >= time_fin:
+                print("❌ La hora de finalización debe ser posterior a la de inicio.")
+                continue
 
-            if 0 <= hora_i < 24 and 0 <= hora_f < 24 and hora_i < hora_f:
-                duracion = hora_f - hora_i
-                print(f"✅ Horario reservado: {h_ini} a {h_fin} ({duracion} horas).")
-                break
-            else:
-                print("❌ Horario ilógico. Asegúrate de que la hora sea entre 0-23 y que el fin sea después del inicio.")
-        else:
-            print("❌ ¡Error! No introduzcas letras. Usa números (ej: 14:00 o 14:30).") #poner q 14 no se acepta
-# Guardamos los datos del cliente
-    cliente_actual = Cliente(id_client, user_name, correo_usuario, invitados_val, presupuesto_val)
+            # Calculamos la duración usando la diferencia de tiempo
+            duracion_td = time_fin - time_ini
+            duracion_horas = duracion_td.seconds / 3600
 
-    # 1. Agregamos el cliente a la lista (convertido a diccionario)
+            if duracion_horas < 2:
+                print("⚠️ Una boda debe durar al menos 2 horas. Ajuste el horario.")
+                continue
+
+            print(f"✅ Horario validado: {h_ini} a {h_fin} ({duracion_horas:.1f} horas).")
+            break
+
+        except ValueError:
+            print("❌ Formato de hora inválido. Debe usar HH:MM (ej: 14:00, 09:30).")
+            print("   No se aceptan números solos o letras.")
+
+    # --- GUARDAR DATOS DEL CLIENTE (Al final de las validaciones) ---
+    cliente_actual = Cliente(id_client, name_client, correo_temp, invitados_val, presupuesto_val)
     lista_clientes.append(cliente_actual.to_dict())
-
-    # 2. Guardamos la lista completa en el archivo (Solo 2 parámetros: ruta y datos)
     fg.write_json('data/clientes.json', lista_clientes)
 
-    print(f"✅ Cliente {cliente_actual.nombre} registrado.")
+    print(f"\n✅ Cliente {cliente_actual.nombre} y horario registrados con éxito.")
     input("Presione Enter para elegir el lugar...")
 
     # --- PASO 2: SELECCIÓN DE LUGAR ---
@@ -169,7 +163,10 @@ def ejecutar_registro_boda():
     print("================================")
     for l in lugares_libres:
         # Mostramos los datos clave para que el cliente decida
-        print(f"ID: {l['id_lugar']} | {l['nombre'].ljust(20)} | Capacidad: {l['capacidad']} pers. | Precio: ${l['precio']}")
+        print(
+        f"ID: {l['id_lugar']} | {l['nombre'].ljust(20)} | "
+        f"Capacidad: {l['capacidad']} pers. | Precio: ${l['precio']:>6}"
+    )
     print("================================\n")
     lugar_elegido = None  # Empezamos sin nada
 
@@ -190,7 +187,11 @@ def ejecutar_registro_boda():
                     print(f"✅ Sede confirmada: {lugar_elegido['nombre']}")
                     input("Presione Enter para continuar a la contratación de personal...")
                 else:
-                    print(f"❌ ¡Presupuesto insuficiente! El salón cuesta ${lugar_seleccionado['precio']} y solo tienes ${cliente_actual.presupuesto}.")
+                    print(
+                        f"❌ ¡Presupuesto insuficiente! El salón "
+                        f"'{lugar_seleccionado['nombre'].ljust(20)}' cuesta "
+                        f"${lugar_seleccionado['precio']} y solo tienes ${cliente_actual.presupuesto}."
+                    )
                     print("Por favor, elija un lugar acorde a su presupuesto.")
             else:
                 print("❌ ID no encontrado en la lista de salones disponibles.")
