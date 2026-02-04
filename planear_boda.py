@@ -136,57 +136,37 @@ def ejecutar_registro_boda():
     print(f"\n✅ Cliente {cliente_actual.nombre} y horario registrados con éxito.")
     input("Presione Enter para elegir el lugar...")
 
-    # --- PASO 2: SELECCIÓN DE LUGAR ---
+    # --- PASO 3: SELECCIÓN DE LUGAR ---
     fg.limpiar_pantalla()
 
-    # Ahora recibimos dos variables
-    lugares_libres, sugerencias = fg.get_lugares_disponibles(fecha_str,
-                                                            lista_lugares,
-                                                            h_ini,
-                                                            h_fin,
-                                                            invitados_val)
+    # 1. OBTENER DISPONIBILIDAD REAL (Fecha + Horario + Capacidad)
+    lugares_libres, sugerencias = fg.get_lugares_disponibles(
+        fecha_str, lista_lugares, h_ini, h_fin, invitados_val
+    )
 
+    # 2. VALIDAR SI HAY OPCIONES DISPONIBLES
     if not lugares_libres:
         print(f"❌ No hay lugares disponibles para el {fecha_str} a esa hora.")
-
         if sugerencias:
             print("\n💡 SUGERENCIAS DEL SISTEMA INTELIGENTE:")
             for sug in sugerencias:
                 print(f"   -> El lugar '{sug['nombre']}' está libre el día {sug['fecha']}")
-
-        print("\nIntente con otra fecha o lugar.")
-        input("Presione Enter para salir...")
+        print("\nIntente con otra fecha o reduzca el número de invitados.")
+        input("Presione Enter para volver al menú...")
         return
-    #---SELECCION DEL LUGAR---
-    # 1. CREAR UNA LISTA VACÍA PARA LOS LUGARES QUE CUMPLEN
-    lugares_aptos = []
 
-    # 2. RECORRER LA LISTA ORIGINAL Y FILTRAR
-    for l in lista_lugares:
-        # Si la capacidad del lugar es suficiente para los invitados...
-        if l['capacidad'] >= cliente_actual.invitados:
-            # ... lo agregamos a nuestra lista de opciones válidas
-            lugares_aptos.append(l)
-
-    # 3. VALIDAR SI QUEDÓ ALGÚN LUGAR
-    if not lugares_aptos:
-        print("\n" + "!"*45)
-        print(f"❌ ERROR: Ningún salón tiene capacidad para {cliente_actual.invitados} pers.")
-        print("!"*45)
-        input("Presione Enter para volver...")
-        return # Detenemos la función porque no hay opciones
-    # 3. MOSTRAR LA TABLA
-    print("\n================================")
-    print("      SALONES DISPONIBLES       ")
-    print("================================")
-    print("================================\n")
-    for l in lugares_aptos: # <--- Cambiado a lugares_aptos
+    # 3. MOSTRAR LA TABLA DE LUGARES APTOS Y LIBRES
+    print("\n" + "="*50)
+    print("           SALONES DISPONIBLES              ".center(50))
+    print("="*50)
+    for l in lugares_libres: # Usamos la lista que ya filtró fg.get_lugares_disponibles
         print(
             f"ID: {str(l['id_lugar']).ljust(4)} | {l['nombre'].ljust(20)} | "
-            f"Cap: {str(l['capacidad']).rjust(3)} pers. | Precio: ${l['precio']:>6}"
+            f"Cap: {str(l['capacidad']).rjust(3)} pers. | Precio: ${l['precio']:>6.2f}"
         )
-    print("============================================\n")
+    print("="*50 + "\n")
 
+    # 4. BUCLE DE SELECCIÓN
     lugar_elegido = None
     while lugar_elegido is None:
         try:
@@ -196,29 +176,28 @@ def ejecutar_registro_boda():
                 print("Operación cancelada.")
                 return
 
-            # Usamos tu función de búsqueda
-            lugar_seleccionado = fg.buscar_elemento_id(id_lug, lugares_aptos, 'id_lugar')
+            # Buscamos en la lista de los que están LIBRES y tienen CAPACIDAD
+            lugar_seleccionado = fg.buscar_elemento_id(id_lug, lugares_libres, 'id_lugar')
 
             if lugar_seleccionado:
+                # Validamos si el dinero le alcanza
                 if fg.can_select_lugar(cliente_actual.presupuesto, lugar_seleccionado['precio']):
-                    # --- ÉXITO ---
                     lugar_elegido = lugar_seleccionado
 
-                    # RESTAMOS EL COSTO DEL PRESUPUESTO DEL CLIENTE
+                    # RESTAMOS EL COSTO DEL PRESUPUESTO
                     cliente_actual.presupuesto -= lugar_elegido['precio']
 
-                    print(f"✅ Sede confirmada: {lugar_elegido['nombre']}")
-                    print(f"💰 Presupuesto restante: ${cliente_actual.presupuesto}")
+                    print(f"\n✅ Sede confirmada: {lugar_elegido['nombre']}")
+                    print(f"💰 Presupuesto restante: ${cliente_actual.presupuesto:,.2f}")
                     input("\nPresione Enter para continuar a la contratación de personal...")
                 else:
                     print(
                         f"❌ ¡Presupuesto insuficiente! El salón "
-                        f"'{lugar_seleccionado['nombre'].ljust(20)}' cuesta "
-                        f"${lugar_seleccionado['precio']} y solo tienes ${cliente_actual.presupuesto}."
+                        f"'{lugar_seleccionado['nombre']}' cuesta ${lugar_seleccionado['precio']} "
+                        f"y solo tienes ${cliente_actual.presupuesto}."
                     )
-                    print("Por favor, elija un lugar acorde a su presupuesto.")
             else:
-                print("❌ ID no encontrado o el lugar no es apto para sus invitados.")
+                print("❌ ID no válido o el lugar no está disponible para estas condiciones.")
 
         except ValueError:
             print("❌ Por favor, introduce un número válido.")
@@ -268,7 +247,10 @@ def ejecutar_registro_boda():
                 # 1. Variables y validación de duplicados
                 oficio_p = dict_p['oficio'].lower()
                 sueldo_p = dict_p['sueldo']
-                ya_contratado = any(p.id_personal == dict_p['id_personal'] for p in personal_contratado)
+                ya_contratado = any(
+                    p.id_personal == dict_p['id_personal']
+                    for p in personal_contratado
+                )
 
                 if ya_contratado:
                     print(f"⚠️ {dict_p['nombre']} ya ha sido añadido.")
@@ -283,7 +265,7 @@ def ejecutar_registro_boda():
                     print(f"\n✅ CONFIRMADO: {dict_p['nombre']} como {oficio_p}.")
                     print(f"💰 Nuevo presupuesto restante: ${cliente_actual.presupuesto}")
                 # Está fuera de los IFs de éxito/error, así que siempre se detiene.
-                input("\nPresione Enter para continuar...") 
+                input("\nPresione Enter para continuar...")
 
             else:
                 print("❌ ID no encontrado.")
@@ -293,57 +275,71 @@ def ejecutar_registro_boda():
             print("⚠️ Error: Use solo números para el ID.")
             input("Presione Enter...") # PAUSA 4
 
-    # --- PASO 4: SELECCIÓN DE INVENTARIO UNIFICADO ---
     # Cubrimos: catering, bebida, postre, mobiliario, tecnologia y decoracion
     categorias_inv = ["catering", "bebida", "postre", "mobiliario", "tecnologia", "decoracion"]
 
     for cat in categorias_inv:
         fg.limpiar_pantalla()
-        print(f"--- PASO 4: SELECCIÓN DE {cat.upper()} (Presupuesto: ${cliente_actual.presupuesto}) ---")
+        titulo = f"--- PASO 4: SELECCIÓN DE {cat.upper()} ---"
+        print(titulo)
+        print(f"💰 Presupuesto disponible: ${cliente_actual.presupuesto:,.2f}\n")
 
-        # Filtramos el inventario general por la categoría actual
-        items_categoria = [i for i in lista_inventario if i.get('categoria') == cat]
+        items_categoria = []
+        for i in lista_inventario:
+            if i.get('categoria') == cat:
+                items_categoria.append(i)
 
         if not items_categoria:
-            continue # Si no hay nada de esa categoría, saltamos a la siguiente
+            continue
 
+        # Tabla alineada con ljust y rjust
+        print("ID".ljust(5) | "Producto".ljust(30) | "Precio".rjust(10) | "Stock")
+        print("-" * 55)
         for item in items_categoria:
-            print(f"ID: {item['id_item']} | {item['nombre'].ljust(30)} | ${item['precio_unidad']} | Stock: {item['cantidad']}")
+            print(
+                f"{str(item['id_item']).ljust(5)} | "
+                f"{item['nombre'].ljust(30)} | "
+                f"${str(item['precio_unidad']).rjust(9)} | "
+                f"{item['cantidad']}"
+            )
 
         while True:
-            op = input(f"\nID de {cat} (o '0' para siguiente categoría): ")
-            if op == '0': 
+            op = input(f"\nID de {cat} (o '0' para siguiente categoría): ").strip()
+            if op == '0':
                 break
 
             try:
                 id_sel = int(op)
-                seleccionado = next((x for x in items_categoria if x['id_item'] == id_sel), None)
+                seleccionado = fg.buscar_elemento_id(id_sel, items_categoria, 'id_item')
 
                 if seleccionado:
-                    cant = int(input(f"¿Cantidad de {seleccionado['nombre']}?: "))
+                    cant = int(input(f"¿Cuántas unidades de '{seleccionado['nombre']}'?: "))
                     costo_total_item = seleccionado['precio_unidad'] * cant
 
                     if seleccionado['cantidad'] < cant:
                         print(f"❌ Stock insuficiente. Solo quedan {seleccionado['cantidad']}.")
                     elif costo_total_item > cliente_actual.presupuesto:
-                        print(f"❌ No hay presupuesto. Costo: ${costo_total_item} | Tienes: ${cliente_actual.presupuesto}")
+                        print(
+                            f"❌ Presupuesto insuficiente. Costo: ${costo_total_item} "
+                            f"| Tienes: ${cliente_actual.presupuesto}"
+                        )
                     else:
-                        # DESCUENTO TEMPORAL Y REGISTRO
+                        # Registro de compra
                         cliente_actual.presupuesto -= costo_total_item
-                        # No restamos del JSON aquí, solo de la lista en memoria
                         seleccionado['cantidad'] -= cant
 
+                        # Guardamos en la lista de reservas
                         servicios_elegidos.append(ItemReserva(
                             seleccionado['id_item'],
                             seleccionado['nombre'],
                             seleccionado['precio_unidad'],
                             cant
                         ))
-                        print(f"✅ {seleccionado['nombre']} añadido. Presupuesto restante: ${cliente_actual.presupuesto}")
+                        print(f"✅ Añadido. Presupuesto restante: ${cliente_actual.presupuesto:,.2f}")
                 else:
                     print("❌ ID no válido para esta categoría.")
             except ValueError:
-                print("⚠️ Ingrese solo números.")
+                print("⚠️ Error: Ingrese solo números.")
 
         input("\nPresione Enter para pasar a la siguiente categoría...")
 
