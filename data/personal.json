@@ -1,14 +1,6 @@
 [
-{
-        "id_personal": 1,
-        "nombre": "DJ Carlos",
-        "oficio": "Música",
-        "categoria": "musica",
-        "sueldo": 500,
-        "fechas_ocupadas": []
-    },
     {
-        "id_personal": 2,
+        "id_personal": 1,
         "nombre": "Ana Fotografía",
         "oficio": "Fotógrafa",
         "categoria": "fotografia",
@@ -16,15 +8,7 @@
         "fechas_ocupadas": []
     },
     {
-        "id_personal": 3,
-        "nombre": "Cuarteto de Cuerdas",
-        "oficio": "Música clásica",
-        "categoria": "musica",
-        "sueldo": 1000,
-        "fechas_ocupadas": []
-    },
-    {
-        "id_personal": 4,
+        "id_personal": 2,
         "nombre": "Ana Heredia",
         "oficio": "Wedding Planner",
         "categoria": "planificador",
@@ -32,7 +16,7 @@
         "fechas_ocupadas": []
     },
     {
-        "id_personal": 5,
+        "id_personal": 3,
         "nombre": "Roberto Juez",
         "oficio": "Maestro de Ceremonias",
         "categoria": "oficiante",
@@ -40,7 +24,7 @@
         "fechas_ocupadas": []
     },
     {
-        "id_personal": 6,
+        "id_personal": 4,
         "nombre": "Miley Style",
         "oficio": "Maquillaje y Peinado",
         "categoria": "estetica",
@@ -48,7 +32,7 @@
         "fechas_ocupadas": []
     },
     {
-        "id_personal": 7,
+        "id_personal": 5,
         "nombre": "Arte y Flores",
         "oficio": "Decorador / Florista",
         "categoria": "decoracion",
@@ -56,7 +40,7 @@
         "fechas_ocupadas": []
     },
     {
-        "id_personal": 8,
+        "id_personal": 6,
         "nombre": "Seguridad Total",
         "oficio": "Seguridad y Valet Parking",
         "categoria": "seguridad",
@@ -64,7 +48,7 @@
         "fechas_ocupadas": []
     },
     {
-        "id_personal": 9,
+        "id_personal": 7,
         "nombre": "Julián Sommelier",
         "oficio": "Sommelier / Barman especializado",
         "categoria": "barman",
@@ -72,11 +56,59 @@
         "fechas_ocupadas": []
     },
     {
-        "id_personal": 10,
+        "id_personal": 8,
         "nombre": "Miriam Ochoa",
         "oficio": "Wedding Planner",
         "categoria": "planificador",
         "sueldo": 1000,
+        "fechas_ocupadas": []
+    },
+    {
+        "id_personal": 9,
+        "nombre": "Mariam Fotografía",
+        "oficio": "Fotógrafa",
+        "categoria": "fotografia",
+        "sueldo": 400,
+        "fechas_ocupadas": []
+    },
+    {
+        "id_personal": 10,
+        "nombre": "Antonio Juez",
+        "oficio": "Maestro de Ceremonias",
+        "categoria": "oficiante",
+        "sueldo": 500,
+        "fechas_ocupadas": []
+    },
+    {
+        "id_personal": 11,
+        "nombre": "Erika Style",
+        "oficio": "Maquillaje y Peinado",
+        "categoria": "estetica",
+        "sueldo": 200,
+        "fechas_ocupadas": []
+    },
+    {
+        "id_personal": 12,
+        "nombre": "Arte y Luces",
+        "oficio": "Luces / Iluminacion",
+        "categoria": "decoracion",
+        "sueldo": 800,
+        "fechas_ocupadas": []
+    },
+    {
+        "id_personal": 13,
+        "nombre": "Seguridad Total",
+        "oficio": "Seguridad y Valet Parking",
+        "categoria": "seguridad",
+        "sueldo": 350,
+        "fechas_ocupadas": []
+    },
+    {
+        "id_personal": 14,
+        "nombre": "Alejandro Sommelier",
+        "oficio": "Sommelier / Barman especializado",
+        "categoria": "barman",
+        "sueldo": 450,
         "fechas_ocupadas": []
     }
 ]

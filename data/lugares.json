@@ -14,7 +14,7 @@
     {
         "id_lugar": 2,
         "nombre": "Palacio de Cristal",
-        "capacidad": 300,
+        "capacidad": 350,
         "precio": 5500,
         "servicios_incluidos": [
             "Aire acondicionado central",

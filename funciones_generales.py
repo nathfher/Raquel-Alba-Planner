@@ -286,7 +286,7 @@ def guardar_cotizacion(cotizacion_reciente, list_cotizaciones):
 def approve_cotizacion(cotizacion, lista_lugares, lista_personal,lista_inventario):
     """Evita reservas accidentales, avisa si se gaurda la cot o no con bool"""
     print(f"RESUMEN DE COTIZACIÓN PARA: {cotizacion['cliente']}")
-    print(f"TOTAL A PAGAR: ${cotizacion['total']}")
+    print(f"TOTAL A PAGAR: ${cotizacion['total_final']}")
 
     confirmar = input("¿Desea confirmar y aprobar esta boda? (S/N): ").lower()
 

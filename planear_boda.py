@@ -47,28 +47,39 @@ def ejecutar_registro_boda():
         id_input = input("Ingrese el ID único del cliente (solo números): ")
         try:
             # Intentamos convertir la entrada a entero
-            id_cliente = int(id_input)
+            id_client = int(id_input)
             break  # Si tiene éxito, rompemos el bucle y continuamos
         except ValueError:
             # Si ocurre un error de valor (puso letras), mostramos aviso
             print("❌ Error: El ID debe ser un número entero. Intente de nuevo.")
     # --- AQUÍ VA LA VALIDACIÓN ---
-    id_existe = any(c['id_cliente'] == id_cliente for c in lista_clientes)
+    id_existe = any(c['id_cliente'] == id_client for c in lista_clientes)
 
     if id_existe:
-        print(f"\n⚠️ ERROR: El ID '{id_cliente}' ya está registrado.")
+        print(f"\n⚠️ ERROR: El ID '{id_client}' ya está registrado.")
         print("No se puede duplicar clientes. Volviendo al menú...")
         input("Presione Enter para continuar...")
         return # Esto detiene el registro y te saca al menú principal
-
-    nombre_usuario = input("Ingrese el nombre completo del cliente: ")
-
+    while True:
+        user_name = input("Ingrese el nombre completo del cliente: ").strip()
+        if not user_name:
+            print("❌ Nombre inválido. Intente de nuevo.")
+            continue
+        if user_name.isdigit():
+            print("❌ Nombre inválido. No puede ser solo números.")
+            continue
+        break
     while True:
         correo_temp = input("Ingrese el correo electrónico: ")
-        if "@" in correo_temp:
+        if "@" in correo_temp and len(correo_temp) >= 6:
             correo_usuario = correo_temp
             break
-        print("❌ ¡Correo inválido! Debe contener un símbolo '@'.")
+        elif "@" not in correo_temp:
+            print("❌ ¡Correo inválido! Debe contener un símbolo '@'.")
+        elif len(correo_temp) < 6:
+            print("❌ ¡Correo inválido! Debe contener como minimo 6 caracteres.")
+        else:
+            print("❌ ¡Correo inválido! Debe contener un símbolo '@' y un minimo de 6 caracteres.")
 
     while True:
         try:
@@ -100,8 +111,8 @@ def ejecutar_registro_boda():
     # --- NUEVO: Captura de Horas (Integrado) ---
     while True:
         print("\nDefina el horario del evento (Formato 24h):")
-        h_ini = input("Hora de inicio (ej: 14 o 14:30): ").strip()
-        h_fin = input("Hora de finalización (ej: 22 o 22:00): ").strip()
+        h_ini = input("Hora de inicio (ej: 14:00 o 14:30): ").strip()
+        h_fin = input("Hora de finalización (ej: 22:00 o 22:30): ").strip()
 
         # 1. Quitamos los ':' para verificar que no haya letras (como 'helloworld')
         prueba_ini = h_ini.replace(":", "")
@@ -120,9 +131,9 @@ def ejecutar_registro_boda():
             else:
                 print("❌ Horario ilógico. Asegúrate de que la hora sea entre 0-23 y que el fin sea después del inicio.")
         else:
-            print("❌ ¡Error! No introduzcas letras. Usa números (ej: 14 o 14:30).")
+            print("❌ ¡Error! No introduzcas letras. Usa números (ej: 14:00 o 14:30).") #poner q 14 no se acepta
 # Guardamos los datos del cliente
-    cliente_actual = Cliente(id_cliente, nombre_usuario, correo_usuario, invitados_val, presupuesto_val)
+    cliente_actual = Cliente(id_client, user_name, correo_usuario, invitados_val, presupuesto_val)
 
     # 1. Agregamos el cliente a la lista (convertido a diccionario)
     lista_clientes.append(cliente_actual.to_dict())
@@ -137,7 +148,11 @@ def ejecutar_registro_boda():
     fg.limpiar_pantalla()
 
     # Ahora recibimos dos variables
-    lugares_libres, sugerencias = fg.get_lugares_disponibles(fecha_str, lista_lugares, h_ini, h_fin, invitados_val)
+    lugares_libres, sugerencias = fg.get_lugares_disponibles(fecha_str,
+                                                            lista_lugares,
+                                                            h_ini,
+                                                            h_fin,
+                                                            invitados_val)
 
     if not lugares_libres:
         print(f"❌ No hay lugares disponibles para el {fecha_str} a esa hora.")
@@ -163,7 +178,7 @@ def ejecutar_registro_boda():
     while lugar_elegido is None:  # Mientras no tengamos un lugar válido...
         try:
             id_lug = int(input("\nSeleccione ID del lugar (o '0' para cancelar): "))
-        
+
             if id_lug == 0:
                 print("Operación cancelada.")
                 return # Salimos de la función si se arrepienten
@@ -175,12 +190,13 @@ def ejecutar_registro_boda():
                 if fg.can_select_lugar(cliente_actual.presupuesto, lugar_seleccionado['precio']):
                     lugar_elegido = lugar_seleccionado # <--- ESTO ROMPE EL BUCLE
                     print(f"✅ Sede confirmada: {lugar_elegido['nombre']}")
+                    input("Presione Enter para continuar a la contratación de personal...")
                 else:
                     print(f"❌ ¡Presupuesto insuficiente! El salón cuesta ${lugar_seleccionado['precio']} y solo tienes ${cliente_actual.presupuesto}.")
                     print("Por favor, elija un lugar acorde a su presupuesto.")
             else:
                 print("❌ ID no encontrado en la lista de salones disponibles.")
-            
+
         except ValueError:
             print("❌ Por favor, introduce un número válido.")
 
@@ -191,58 +207,63 @@ def ejecutar_registro_boda():
     # --- PASO 3: CONTRATACIÓN DE PERSONAL ---
     while True:
         fg.limpiar_pantalla()
+        # El presupuesto se actualiza aquí arriba cada vez que el bucle reinicia
         print(f"--- PASO 3: CONTRATACIÓN DE PERSONAL (Presupuesto: ${cliente_actual.presupuesto}) ---")
-        tipo = input("\n¿Qué oficio busca? (Fotografia, Seguridad, Estetica, Musica, Planificador, Decoracion o Barman / '0' para continuar): ").lower().strip()
+        
+        tipo = input("\n¿Qué oficio busca? (Fotografia, Seguridad, Estetica, Planificador, Decoracion o Barman / '0' para continuar): ").lower().strip()
 
-        if tipo == '0': 
+        if tipo == '0':
             break
 
-        # Búsqueda de personal en personal.json
         pers_libres = fg.get_personal_disponible(tipo, lista_personal, fecha_str, h_ini, h_fin)
 
         if not pers_libres:
             print(f"❌ No hay {tipo} disponible en ese horario.")
-            input("Pulse Enter...")
+            input("Presione Enter para volver a elegir oficio...") # PAUSA 1
             continue
 
         print(f"\n--- {tipo.upper()} DISPONIBLES ---")
         for p in pers_libres:
-            # Imprimimos directamente los datos del diccionario
             print(f"ID: {p['id_personal']} | Nombre: {p['nombre']} | Sueldo: ${p['sueldo']}")
         print("------------------------------")
+
         try:
             id_p = int(input(f"ID del {tipo} a contratar (0 para volver): "))
-            if id_p == 0: continue
+            if id_p == 0: 
+                continue
 
-            dict_p = fg.contratar_personal(lista_personal, id_p) #DICT_P DICCIONARIO DEL PERSONAL
+            dict_p = fg.contratar_personal(lista_personal, id_p) 
+            
             if dict_p:
-                nombre_p = dict_p['nombre'].lower()
+                # 1. Variables y validación de duplicados
                 oficio_p = dict_p['oficio'].lower()
-                    
-                    # --- AQUÍ INSERTAS LA VALIDACIÓN DE EXCLUSIÓN ---
-                    # REGLA: DJ vs BANDA DE ROCK (Sentido A)
-                if "dj" in nombre_p:
-                        # Revisamos si ya existe la Banda de Rock en servicios_elegidos
-                    if any("rock" in s.nombre.lower() for s in servicios_elegidos):
-                        print("❌ Conflicto: No puede contratar al DJ porque ya eligió la 'Banda de Rock'.")
-                        input("Presione Enter para continuar...")
-                        continue # Detiene la contratación y vuelve a pedir ID
-                    else:
-                        print("⚠️  AVISO: Al contratar este DJ, se bloqueará la opción de 'Banda de Rock'.")
-                # 2. REGLA: TERRAZA -> SEGURIDAD (La que pediste)
-                if "terraza" in lugar_seleccionado['nombre'].lower() and "seguridad" in oficio_p:
-                    print("✅ Requisito de seguridad para la Terraza cubierto.")
-
-                # --- GUARDAR SI NO ESTÁ REPETIDO ---
-                if any(p.id_personal == dict_p['id_personal'] for p in personal_contratado):
-                    print("⚠️ Ya contratado.")
+                sueldo_p = dict_p['sueldo']
+                ya_contratado = any(p.id_personal == dict_p['id_personal'] for p in personal_contratado)
+                
+                if ya_contratado:
+                    print(f"⚠️ {dict_p['nombre']} ya ha sido añadido.")
+                elif sueldo_p > cliente_actual.presupuesto:
+                    print(f"❌ Presupuesto insuficiente. Falta: ${sueldo_p - cliente_actual.presupuesto}")
                 else:
-                    personal_contratado.append(Personal(dict_p['id_personal'], dict_p['nombre'], dict_p['oficio'], dict_p['sueldo']))
-                    print(f"✅ {dict_p['nombre']} añadido.")
-            else: print("❌ ID no válido.")
+                    # 2. Contratación y Resta de presupuesto
+                    cliente_actual.presupuesto -= sueldo_p # ESTO actualiza el número de arriba
+                    personal_contratado.append(Personal(dict_p['id_personal'], dict_p['nombre'], dict_p['oficio'], sueldo_p))
+                    
+                    # MENSAJE QUE DICES QUE NO VES:
+                    print(f"\n✅ CONFIRMADO: {dict_p['nombre']} como {oficio_p}.")
+                    print(f"💰 Nuevo presupuesto restante: ${cliente_actual.presupuesto}")
+
+                # PAUSA 2: Esta es la más importante. 
+                # Está fuera de los IFs de éxito/error, así que siempre se detiene.
+                input("\nPresione Enter para continuar...") 
+
+            else:
+                print("❌ ID no encontrado.")
+                input("Presione Enter...") # PAUSA 3
+
         except ValueError: 
-            print("⚠️ Ingrese un número.")
-            input("\nPresione Enter...")
+            print("⚠️ Error: Use solo números para el ID.")
+            input("Presione Enter...") # PAUSA 4
 
     # --- PASO 4: SELECCIÓN DE SERVICIOS (CATÁLOGOS) ---
     # Definimos los catálogos para procesarlos en un solo bucle limpio
@@ -259,12 +280,13 @@ def ejecutar_registro_boda():
 
         while True:
             op = input(f"\nID de {cat['nombre']} (o '0' para siguiente): ")
-            if op == '0': break
-            
+            if op == '0': 
+                break
+
             try:
                 id_sel = int(op)
                 seleccionado = next((x for x in cat['lista'] if x['id_item'] == id_sel), None)
-                
+
                 if seleccionado:
                     # --- AQUÍ VA LA VALIDACIÓN PREVENTIVA ---
                     if "gala" in seleccionado['nombre'].lower():
