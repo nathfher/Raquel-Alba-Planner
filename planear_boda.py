@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime,timedelta
 import funciones_generales as fg
 from modulos import Cliente, Personal, ItemReserva
 
@@ -140,31 +140,41 @@ def ejecutar_registro_boda():
     while True:
         h_fin = input("Hora de finalización (Formato HH:MM, ej. 21:30): ").strip()
 
-        # 1. Validación de formato (5 caracteres, ":" en medio, solo un ":")
         if len(h_fin) == 5 and h_fin[2] == ":" and h_fin.count(":") == 1:
             try:
-                # Convertimos a tiempo (t_ini ya debe existir del paso anterior)
+                t_ini = datetime.strptime(h_ini, "%H:%M")
                 t_fin = datetime.strptime(h_fin, "%H:%M")
-                t_ini = datetime.strptime(h_ini, "%H:%M") # Aseguramos tener ambos para comparar
 
+                # --- 1. AJUSTE DE MEDIA NOCHE ---
+                # Si fin es menor que inicio (ej: 02:00 < 22:00), sumamos un día
+                if t_fin < t_ini:
+                    t_fin = t_fin + timedelta(days=1)
+
+                # --- 2. CÁLCULO REAL ---
                 diferencia = t_fin - t_ini
+                total_segundos = diferencia.total_seconds()
                 segundos_minimos = 2 * 3600 # 2 horas
 
-                # 2. Validaciones de negocio
-                if t_fin <= t_ini:
-                    print("❌ La hora de fin debe ser posterior a la de inicio.")
-                elif diferencia.total_seconds() < segundos_minimos:
-                    print(f"❌ Duración insuficiente. Mínimo 2 horas (Su evento: {diferencia.total_seconds()/60:.0f} min).")
+                # --- 3. VALIDACIONES DE NEGOCIO ---
+                if t_fin == t_ini:
+                    print("❌ La hora de fin no puede ser igual a la de inicio.")
+                elif total_segundos < segundos_minimos:
+                    minutos_reales = total_segundos / 60
+                    print(f"❌ Duración insuficiente. Mínimo 2 horas (Su evento dura: {minutos_reales:.0f} min).")
                 else:
-                    # TODO CORRECTO: Salimos del bucle
+                    # PERFECTO
                     break
+
             except ValueError:
                 print("❌ Hora inexistente (use rango 00:00 - 23:59).")
         else:
             print("⚠️ Formato incorrecto. Use HH:MM (ej. 20:00).")
-        
-        # Este input va DENTRO del while pero FUERA de los if de éxito
+
         input("Presione Enter para reintentar...")
+
+    # Fuera del bucle, confirmamos éxito
+        horas_finales = (t_fin - t_ini).total_seconds() / 3600
+        print(f"✅ Horario confirmado. Duración total: {horas_finales:.1f} horas.")
 
     # Este print va FUERA del while, cuando ya todo es válido
     print(f"✅ Duración confirmada: {diferencia.total_seconds()/3600:.1f} horas.")

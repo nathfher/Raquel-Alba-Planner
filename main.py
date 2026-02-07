@@ -24,7 +24,7 @@ def main():
     """
     while True:
         fg.limpiar_pantalla()
-        print("=== MENU RAQUEL & ALBA PLANNER ===\n 1. Nueva boda\n 2. Ver Historial\n 3. Salir")
+        print("=== MENU RAQUEL & ALBA PLANNER ===\n 1.💍 Nueva boda\n 2.📜 Ver Historial\n 3.🚪 Salir")
 
         op = input("Seleccione: ")
 

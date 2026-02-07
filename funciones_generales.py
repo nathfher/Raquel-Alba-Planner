@@ -2,24 +2,13 @@
 from datetime import datetime,timedelta
 import json
 import os
-import modulos
 
 
 def write_json(ruta,data):
-    """
-    Guarda información en un archivo JSON.
-    Recibe la ruta del archivo y los datos (listas o diccionarios) para escribirlos 
-    con un formato ordenado (indentación de 4 espacios).
-    """
     with open(ruta,'w',encoding='utf-8') as f:
         json.dump(data,f,indent=4,ensure_ascii=False)
 
 def ensure_file_exist(ruta,data_inicial):
-    """
-    Verifica si un archivo existe. Si existe, lo lee y devuelve su contenido.
-    Si no existe, crea el archivo con la 'data_inicial' que le enviemos 
-    (por ejemplo, una lista vacía []) para evitar errores de lectura.
-    """
     if os.path.exists(ruta):
         with open(ruta,'r',encoding='utf-8') as f:
             return json.load(f)
@@ -32,10 +21,6 @@ def ensure_file_exist(ruta,data_inicial):
     return data_inicial
 
 def buscar_elemento_id(id_buscado, list_elements, llave_id):
-    """
-    Busca un ID comparándolo únicamente con la llave específica (ej: 'id_item').
-    Esto evita confusiones entre archivos.
-    """
     for element in list_elements:
         # Usamos .get() para que si la llave no existe en ese objeto, no explote
         if element.get(llave_id) == id_buscado:
@@ -43,9 +28,6 @@ def buscar_elemento_id(id_buscado, list_elements, llave_id):
     return None
 
 def hay_conflicto_horario(lista_reservas, fecha_nueva, h_ini_nueva, h_fin_nueva):
-    """
-    Comprueba si el nuevo horario choca con las reservas existentes.
-    """
     for reserva in lista_reservas:
         # PRIMERO: Nos aseguramos de que 'reserva' sea un diccionario
         if not isinstance(reserva, dict):
@@ -71,7 +53,8 @@ def get_personal_disponible(tipo_buscado, lista_personal, fecha, h_ini, h_fin):
     formato_hora = "%H:%M"
 
     # 1. NORMALIZACIÓN DE BÚSQUEDA
-    busqueda = tipo_buscado.lower().strip().replace("ú", "u").replace("í", "i").replace("á", "a").replace("é", "e").replace("ó", "o")
+    busqueda = (tipo_buscado.lower().strip().replace("ú", "u").replace("í", "i").replace("á", "a").replace("é", "e").replace("ó", "o")
+                )
 
     try:
         boda_inicio = datetime.strptime(h_ini, formato_hora).time()
@@ -115,13 +98,6 @@ def get_personal_disponible(tipo_buscado, lista_personal, fecha, h_ini, h_fin):
     return disponibles
 
 def get_lugares_disponibles(fecha_str, lista_lugares, h_ini, h_fin, invitados):
-    """
-    Motor de búsqueda de ubicaciones con sistema de recomendación:
-    1. Busca lugares que cumplan con la capacidad y disponibilidad horaria.
-    2. Si no hay éxito, busca automáticamente en los 3 días posteriores para 
-       sugerir alternativas al usuario.
-    Retorna una tupla (lista_disponibles, lista_sugerencias).
-    """
     # 1. Intento original
     disponibles = []
     for lugar in lista_lugares:
@@ -153,12 +129,6 @@ def get_lugares_disponibles(fecha_str, lista_lugares, h_ini, h_fin, invitados):
     return [], sugerencias
 
 def contratar_personal(lista_personal,id_personal):
-    """
-    Busca y selecciona a un trabajador del equipo para incluirlo en una boda.
-        Returns
-        dict: El diccionario con los datos del trabajador si se encuentra.
-        None: Si el ID no existe en la lista, permitiendo manejar el error.
-    """
     trabajador_encontrado = buscar_elemento_id(id_personal,lista_personal, 'id_personal')
     if trabajador_encontrado is None:
         print('El ID no existe')
@@ -168,9 +138,7 @@ def contratar_personal(lista_personal,id_personal):
 
 
 def calcular_costo_inventario(lista_items):
-    """
-    Suma el subtotal de todos los servicios elegidos (Catering y Música).
-    """
+
     total = 0
     for i in lista_items:
         # Como 'i' es un objeto de clase ItemReserva, usamos sus funciones
@@ -180,14 +148,7 @@ def calcular_costo_inventario(lista_items):
 def calculate_total(costo_inv: float,
                     costo_pers:float,
                     costo_lug:float,):
-    """
-    Calcula el presupuesto final de la boda aplicando cargos adicionales.
     
-    Suma los tres costos base (inventario, personal y lugar) y añade un 26% 
-    extra que corresponde a:
-    - 10% por honorarios del Wedding Planner.
-    - 16% por impuestos (IVA).
-    """
     costo_total = costo_inv + costo_pers + costo_lug
     extras = costo_total*0.26 #suma 0,10 de costo_wedding planner y 0,16 de impuestos
     return costo_total + extras
@@ -278,14 +239,12 @@ def limpiar_pantalla():
         os.system('clear')
 
 def guardar_reserva_json(cotizacion):
-    # 1. Decimos dónde se va a guardar (en la carpeta data)
+    
     nombre_archivo = 'data/historial_reservas.json'
 
-    # 2. Leemos lo que ya hay en el archivo.
-    # Si no existe, historial será una lista vacía []
     historial = ensure_file_exist(nombre_archivo, [])
-    boda_para_guardar = cotizacion.copy() # Copiamos para no dañar la original
-# Convertimos los objetos de personal a diccionarios
+    boda_para_guardar = cotizacion.copy() 
+
     boda_para_guardar['personal_contratado'] = [
         vars(p) if hasattr(p, '__dict__') else p for p in cotizacion['personal_contratado']
     ]
@@ -303,23 +262,23 @@ def guardar_reserva_json(cotizacion):
 def liberar_recursos(cotizacion, lista_lugares, lista_personal, lista_inventario):
     fecha_boda = cotizacion['fecha']
 
-    # 1. Liberar lugar
+    
     lugar = buscar_elemento_id(cotizacion['id_lugar'], lista_lugares, 'id_lugar')
     if lugar:
         lugar['fechas_ocupadas'] = [f for f in lugar['fechas_ocupadas'] if f['fecha'] != fecha_boda]
 
-    # 2. Liberar personal
+    
     for p_contratado in cotizacion['personal_contratado']:
-        # Obtenemos el ID de forma segura sea objeto o dicc
+       
         id_a_liberar = getattr(p_contratado, 'id_personal', None) or p_contratado.get('id_personal')
         
         p_maestro = buscar_elemento_id(id_a_liberar, lista_personal, 'id_personal')
         
         if p_maestro:
-            # Filtramos para quitar el bloque horario de esa fecha
+           
             p_maestro['fechas_ocupadas'] = [f for f in p_maestro.get('fechas_ocupadas', []) 
                                             if f.get('fecha') != fecha_boda]
-    # 3. Devolver Inventario
+    
     for servicio in cotizacion['items_pedidos']:
         for item_inv in lista_inventario:
             if item_inv['id_item'] == servicio.id_item_reserva:
@@ -362,9 +321,7 @@ def generar_ticket(cliente, lugar, personal, servicios, subtotal, comision, tota
         f.write("\n¡Gracias por confiar en nosotros!")
 
 def can_select_lugar(presupuesto_cliente, precio_lugar):
-    """
-    Comprueba si el cliente tiene dinero suficiente para el salón.
-    """
+    
     if presupuesto_cliente >= precio_lugar:
         return True
     else:
@@ -390,15 +347,7 @@ def imprimir_tabla_personal(lista_disponibles):
     print("-" * 65)
 
 def ver_historial():
-    """
-    Carga y muestra en pantalla todas las bodas registradas en el historial JSON.
-    
-    Acciones:
-    - Recupera la lista de bodas desde 'historial_reservas.json'.
-    - Itera sobre los registros para mostrar detalles clave como: 
-      nombre del cliente, lugar seleccionado y monto total pagado.
-    - Maneja casos donde el archivo no existe o el historial está vacío.
-    """
+
 
     print("==========================================")
     print("       HISTORIAL DE BODAS REGISTRADAS     ")
@@ -428,13 +377,12 @@ def ver_historial():
             print("-" * 40)
 
 def val_restricc(personal_contratado, servicios_elegidos, lugar_seleccionado, num_invitados):
-    # 1. NORMALIZACIÓN (Fundamental para evitar errores de tildes o mayúsculas)
+    
     oficios_p = [p.oficio.lower().strip() for p in personal_contratado]
     nombres_s = [s.nombre.lower().strip() for s in servicios_elegidos]
-    # CORRECCIÓN: Usamos una variable distinta para no sobreescribir el diccionario original
+    
     nombre_lug = lugar_seleccionado['nombre'].lower()
 
-    # --- REGLA 1: CO-REQUISITOS (Dependencias) ---
     if any("cocteleria" in s or "barra libre" in s for s in nombres_s):
         if not any("barman" in o or "sommelier" in o for o in oficios_p):
             return False, "La 'Barra Libre' requiere contratar al 'Sommelier / Barman'."
@@ -443,28 +391,26 @@ def val_restricc(personal_contratado, servicios_elegidos, lugar_seleccionado, nu
         if not any("maestro de ceremonias" in o for o in oficios_p):
             return False, "El 'Solo de Violín' requiere un 'Maestro de Ceremonias'."
 
-    # --- REGLA 2: EXCLUSIONES (Lo que NO puede ir junto) ---
-    # Conflicto de Acústica en el Palacio de Cristal
+
     if "cristal" in nombre_lug and any("mariachi" in s for s in nombres_s):
         return False, "El Palacio de Cristal no admite Mariachis por restricciones de eco."
 
-    # Conflicto de Audio: DJ vs Banda de Rock
+    
     tiene_dj = any("dj" in o for o in oficios_p)
     tiene_rock = any("rock" in s for s in nombres_s)
     if tiene_dj and tiene_rock:
         return False, "Conflicto de audio: No se puede contratar DJ y Banda de Rock simultáneamente."
 
-    # --- REGLA 3: SEGURIDAD ---
-    # La Terraza requiere seguridad por la piscina
+    
     if "terraza" in nombre_lug and not any("seguridad" in o for o in oficios_p):
         return False, "La 'Terraza del Sol' requiere 'Seguridad' obligatorio por la piscina."
 
-    # --- REGLA 4: MOBILIARIO ---
+    
     cant_sillas = sum(s.cantidad_requerida for s in servicios_elegidos if "silla" in s.nombre.lower())
     if num_invitados > 0 and cant_sillas < (num_invitados * 0.8):
         return False, f"Mobiliario insuficiente: Tiene {cant_sillas} sillas para {num_invitados} invitados (Mín. 80%)."
 
-    # --- REGLA 5: INFRAESTRUCTURA (Tecnología) ---
+   
     necesita_audio = any(m in s for s in nombres_s for m in ["dj", "rock", "banda", "mariachi"])
     tiene_equipo = any("sonido" in s or "parlante" in s for s in nombres_s)
     if necesita_audio and not tiene_equipo:
