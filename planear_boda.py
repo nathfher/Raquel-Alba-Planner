@@ -367,58 +367,63 @@ def ejecutar_registro_boda():
                 f"{item['cantidad']}"
             )
 
-        while True:
-            op = input(f"\nID de {cat} (o '0' para siguiente categoría): ").strip()
-            if op == '0':
-                break
+    while True:
+        op = input(f"\nID de {cat} (o '0' para siguiente categoría): ").strip()
+        if op == '0':
+            break
 
-            try:
-                id_sel = int(op)
-                seleccionado = fg.buscar_elemento_id(id_sel, items_categoria, 'id_item')
+        try:
+            id_sel = int(op)
+            seleccionado = fg.buscar_elemento_id(id_sel, items_categoria, 'id_item')
 
-                if seleccionado:
-                    nombre_nuevo = seleccionado['nombre'].lower()
-                    cant = int(input(f"¿Cuántas unidades de '{seleccionado['nombre']}'?: "))
-                    costo_total_item = seleccionado['precio_unidad'] * cant
+            if seleccionado:
+                nombre_nuevo = seleccionado['nombre'].lower()
+                cant = int(input(f"¿Cuántas unidades de '{seleccionado['nombre']}'?: "))
+                costo_total_item = seleccionado['precio_unidad'] * cant
+
                     # --- RESTRICCIONES PREVENTIVAS ---
-                    # 1. Conflicto Rock vs DJ
-                    tiene_dj = any("dj" in p.oficio.lower() for p in personal_contratado)
-                    if "rock" in nombre_nuevo and tiene_dj:
-                        print("❌ Conflicto de audio: No se puede contratar Banda de Rock si ya eligió un DJ.")
-                        continue # Regresa al inicio del while sin comprar
+                tiene_dj = any("dj" in p.oficio.lower() for p in personal_contratado)
+                if "rock" in nombre_nuevo and tiene_dj:
+                    print("❌ Conflicto de audio: No se puede contratar Banda de Rock si ya eligió un DJ.")
+                    continue
 
-                    # 2. Conflicto Mariachis vs Palacio de Cristal
-                    if "mariachi" in nombre_nuevo and "cristal" in lugar_elegido['nombre'].lower():
-                        print("❌ El Palacio de Cristal no admite Mariachis por restricciones de eco.")
-                        continue
+                if "mariachi" in nombre_nuevo and "cristal" in lugar_elegido['nombre'].lower():
+                    print("❌ El Palacio de Cristal no admite Mariachis por restricciones de eco.")
+                    continue
 
-                    # 3. Validación de Sillas (Opcional: puedes avisar si faltan)
-                    if "silla" in nombre_nuevo:
-                        if cant < (cliente_actual.invitados * 0.8):
-                            print(f"⚠️ Aviso: {cant} sillas son pocas para {cliente_actual.invitados} invitados.")
-
-                    if seleccionado['cantidad'] < cant:
-                        print(f"❌ Stock insuficiente. Solo quedan {seleccionado['cantidad']}.")
-                    elif costo_total_item > presupuesto_provisional:
-                        print(
-                            f"❌ Presupuesto insuficiente. Costo: ${costo_total_item} "
-                            f"| Tienes: ${presupuesto_provisional}"
-                        )
-                    else:
-                        # Registro de compra
-                        presupuesto_provisional -= costo_total_item
-                        # Guardamos en la lista de reservas
-                        servicios_elegidos.append(ItemReserva(
-                            seleccionado['id_item'],
-                            seleccionado['nombre'],
-                            seleccionado['precio_unidad'],
-                            cant
-                        ))
-                        print(f"✅ Añadido. Presupuesto restante: ${presupuesto_provisional:,.2f}")
+                if seleccionado['cantidad'] < cant:
+                    print(f"❌ Stock insuficiente. Solo quedan {seleccionado['cantidad']}.")
+                elif costo_total_item > presupuesto_provisional:
+                    print(f"❌ Presupuesto insuficiente. Tienes: ${presupuesto_provisional}")
                 else:
-                    print("❌ ID no válido para esta categoría.")
-            except ValueError:
-                print("⚠️ Error: Ingrese solo números.")
+                    presupuesto_provisional -= costo_total_item
+                    servicios_elegidos.append(ItemReserva(
+                        seleccionado['id_item'], seleccionado['nombre'],
+                        seleccionado['precio_unidad'], cant
+                    ))
+                    print(f"✅ Añadido. Presupuesto restante: ${presupuesto_provisional:,.2f}")
+            else:
+                print("❌ ID no válido para esta categoría.")
+        except ValueError:
+            print("⚠️ Error: Ingrese solo números.")
+
+        # --- VALIDACIÓN AL SALIR DE LA CATEGORÍA (Nivel fuera del while) ---
+        if cat.lower() == "mobiliario":
+            # 1. Cálculo de Sillas (80%) y Mesas (10%)
+            cant_sillas = sum(item.cantidad_requerida for item in servicios_elegidos if "silla" in item.nombre.lower())
+            sillas_min = int(cliente_actual.invitados * 0.8)
+
+            cant_mesas = sum(item.cantidad_requerida for item in servicios_elegidos if "mesa" in item.nombre.lower())
+            mesas_min = int(cliente_actual.invitados / 10)
+
+            if cant_sillas < sillas_min or cant_mesas < mesas_min:
+                print("\n" + "!"*50)
+                print("⚠️  AVISO DE MOBILIARIO INCOMPLETO:")
+                if cant_sillas < sillas_min:
+                    print(f"   - SILLAS: {cant_sillas}/{sillas_min} mín.")
+                if cant_mesas < mesas_min:
+                    print(f"   - MESAS:  {cant_mesas}/{mesas_min} mín.")
+                print("!"*50)
 
         input("\nPresione Enter para pasar a la siguiente categoría...")
 

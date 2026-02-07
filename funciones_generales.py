@@ -298,6 +298,12 @@ def generar_ticket(cliente, lugar, personal, servicios, subtotal, comision, tota
 
         # Uso de 'lugar'
         f.write(f"LUGAR SELECCIONADO: {lugar['nombre']}\n")
+        f.write(f"LUGAR SELECCIONADO: {lugar['nombre']}\n")
+        f.write("SERVICIOS DE CORTESÍA (INCLUIDOS EN EL LUGAR):\n")
+        
+        # Accedemos a la lista del diccionario lugar
+        for s in lugar.get('servicios_incluidos', []):
+            f.write(f"   🎁 {s:.<30} $0.00\n") 
         f.write(f"COSTO LUGAR: ${lugar['precio']}\n\n")
 
         # Uso de 'personal'
@@ -321,7 +327,7 @@ def generar_ticket(cliente, lugar, personal, servicios, subtotal, comision, tota
         f.write("\n¡Gracias por confiar en nosotros!")
 
 def can_select_lugar(presupuesto_cliente, precio_lugar):
-    
+
     if presupuesto_cliente >= precio_lugar:
         return True
     else:
@@ -348,7 +354,6 @@ def imprimir_tabla_personal(lista_disponibles):
 
 def ver_historial():
 
-
     print("==========================================")
     print("       HISTORIAL DE BODAS REGISTRADAS     ")
     print("==========================================\n")
@@ -367,7 +372,7 @@ def ver_historial():
             total = boda['total_final']
             comision = boda.get('comision', 0) # <--- Extraemos la comisión
             ganancia_total_empresa += comision # <--- Sumamos
- 
+
             print(f"{i}. CLIENTE: {nombre_cliente}")
             print(f"   TOTAL: ${total:.2f} | COMISIÓN EMPRESA: ${comision:.2f}")
             print("-" * 40)
@@ -377,10 +382,10 @@ def ver_historial():
             print("-" * 40)
 
 def val_restricc(personal_contratado, servicios_elegidos, lugar_seleccionado, num_invitados):
-    
+
     oficios_p = [p.oficio.lower().strip() for p in personal_contratado]
     nombres_s = [s.nombre.lower().strip() for s in servicios_elegidos]
-    
+
     nombre_lug = lugar_seleccionado['nombre'].lower()
 
     if any("cocteleria" in s or "barra libre" in s for s in nombres_s):
@@ -395,22 +400,22 @@ def val_restricc(personal_contratado, servicios_elegidos, lugar_seleccionado, nu
     if "cristal" in nombre_lug and any("mariachi" in s for s in nombres_s):
         return False, "El Palacio de Cristal no admite Mariachis por restricciones de eco."
 
-    
+
     tiene_dj = any("dj" in o for o in oficios_p)
     tiene_rock = any("rock" in s for s in nombres_s)
     if tiene_dj and tiene_rock:
         return False, "Conflicto de audio: No se puede contratar DJ y Banda de Rock simultáneamente."
 
-    
+
     if "terraza" in nombre_lug and not any("seguridad" in o for o in oficios_p):
         return False, "La 'Terraza del Sol' requiere 'Seguridad' obligatorio por la piscina."
 
-    
+
     cant_sillas = sum(s.cantidad_requerida for s in servicios_elegidos if "silla" in s.nombre.lower())
     if num_invitados > 0 and cant_sillas < (num_invitados * 0.8):
         return False, f"Mobiliario insuficiente: Tiene {cant_sillas} sillas para {num_invitados} invitados (Mín. 80%)."
 
-   
+
     necesita_audio = any(m in s for s in nombres_s for m in ["dj", "rock", "banda", "mariachi"])
     tiene_equipo = any("sonido" in s or "parlante" in s for s in nombres_s)
     if necesita_audio and not tiene_equipo:

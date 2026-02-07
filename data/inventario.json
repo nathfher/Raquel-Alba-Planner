@@ -45,21 +45,21 @@
         "id_item": 506,
         "categoria": "mobiliario",
         "nombre": "Sillas Crossback de Madera",
-        "cantidad": 80,
+        "cantidad": 350,
         "precio_unidad": 5.5
     },
     {
         "id_item": 507,
         "categoria": "mobiliario",
         "nombre": "Vajilla Porcelana Borde Dorado",
-        "cantidad": 200,
+        "cantidad": 300,
         "precio_unidad": 8.0
     },
     {
         "id_item": 508,
         "categoria": "mobiliario",
-        "nombre": "Calentador de Exterior de Gas",
-        "cantidad": 7,
+        "nombre": "Mesas Crossback de Madera",
+        "cantidad": 200,
         "precio_unidad": 45.0
     },
     {
