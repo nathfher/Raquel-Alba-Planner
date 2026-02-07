@@ -108,33 +108,42 @@ def ejecutar_registro_boda():
             print("⚠️ Formato incorrecto. Debe ser día/mes/año (ej: 15/05/2026)")
 
     # --- PASO 2.2: REGISTRO DE HORARIOS ---
+    print(f"\nDefina el horario para el {fecha_str} (Formato 24h, ej: 12:00 o 17:30):")
     while True:
-        print(f"\nDefina el horario para el {fecha_str} (Formato 24h, ej: 14:00):")
+        # VALIDACIONES ESTRICTAS:
+        # 1. Debe tener exactamente 5 caracteres (00:00)
+        # 2. Debe tener un solo ':' en la posición 2
+        # 3. Solo debe haber un ':' en toda la cadena
         h_ini = input("Hora de inicio: ").strip()
-        h_fin = input("Hora de finalización: ").strip()
+        if len(h_ini) == 5 and h_ini[2] == ":" and h_ini.count(":") == 1:
+            try:
+                t_ini = datetime.strptime(h_ini, "%H:%M")
+                break
+            except ValueError:
+                print("❌ Hora inexistente. Use el rango 00:00 - 23:59.")
+        else:
+            print("⚠️ Formato incorrecto. Use estrictamente HH:MM (5 caracteres y un solo ':').")
+            print("   Ejemplo: Para las 3 de la tarde, escriba 15:00")
 
-        try:
-            time_ini = datetime.strptime(h_ini, "%H:%M")
-            time_fin = datetime.strptime(h_fin, "%H:%M")
+    while True:
+        h_fin = input("Hora de finalización (Formato HH:MM, ej. 21:30): ").strip()
 
-            if time_ini >= time_fin:
-                print("❌ La hora de finalización debe ser posterior a la de inicio.")
-                continue
+        if len(h_fin) == 5 and h_fin[2] == ":" and h_fin.count(":") == 1:
+            try:
+            # Validamos que sea hora real
+                t_ini = datetime.strptime(h_ini, "%H:%M")
+                t_fin = datetime.strptime(h_fin, "%H:%M")
 
-            duracion_horas = (time_fin - time_ini).seconds / 3600
-
-            if duracion_horas < 2:
-                print("⚠️ Una boda debe durar al menos 2 horas. Ajuste el horario.")
-                continue
-
-            print(f"✅ Horario validado: {h_ini} a {h_fin} ({duracion_horas:.1f} horas).")
-            
+            # Validamos que no termine antes de empezar
+                if t_fin > t_ini:
+                    break
+                else:
+                    print("❌ La hora de fin debe ser posterior a la de inicio.")
+            except ValueError:
+                print("❌ Hora inexistente.")
             # CAMBIO AQUÍ: Usamos input() en lugar de print() para forzar la pausa
-            input("\nPresione Enter para continuar a la selección de lugar...") 
-            
-            break
-        except ValueError:
-            print("❌ Formato de hora inválido. Use HH:MM (ej: 14:00).")
+            input("\nPresione Enter para continuar a la selección de lugar...")
+
     # --- PASO 3: SELECCIÓN DE LUGAR ---
     fg.limpiar_pantalla()
 
