@@ -15,9 +15,9 @@ def ensure_file_exist(ruta,data_inicial):
     else:
         with open(ruta,'w',encoding='utf-8') as f:
             if data_inicial is not None:
-                json.dump(data_inicial,f,indent=4)
+                json.dump(data_inicial,f,indent=4, ensure_ascii=False)
             else:
-                json.dump({},f,indent=4)
+                json.dump({},f,indent=4, ensure_ascii=False)
     return data_inicial
 
 def buscar_elemento_id(id_buscado, list_elements, llave_id):

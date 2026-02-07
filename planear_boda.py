@@ -199,24 +199,37 @@ def ejecutar_registro_boda():
         return
 
     # 3. MOSTRAR LA TABLA DE LUGARES APTOS Y LIBRES
-    print("\n" + "="*50)
-    print("           SALONES DISPONIBLES              ".center(50))
-    print("="*50)
-    for l in lugares_libres: # Usamos la lista que ya filtró fg.get_lugares_disponibles
-        print(
-            f"ID: {str(l['id_lugar']).ljust(4)} | {l['nombre'].ljust(20)} | "
-            f"Cap: {str(l['capacidad']).rjust(3)} pers. | Precio: ${l['precio']:>6.2f}"
-        )
-    print("="*50 + "\n")
+    # --- PASO 3: SELECCIÓN DE LUGAR ---
+    fg.limpiar_pantalla()
+    print("="*60)
+    print("           CATÁLOGO DE SALONES DISPONIBLES           ".center(60))
+    print("="*60)
 
-    # 4. BUCLE DE SELECCIÓN
+    # Imprimimos los lugares como "fichas descriptivas"
+    for l in lugares_libres: 
+        print(f"ID: {str(l['id_lugar']).ljust(3)} | 🏛️  {l['nombre'].upper()}")
+        print(f"      👥 Capacidad: {str(l['capacidad']).rjust(3)} pers. | 💰 Precio: ${l['precio']:>8.2f}")
+        
+        # Le damos vida a los servicios incluidos para que el usuario los vea ANTES de elegir
+        if l.get('servicios_incluidos'):
+            servicios_str = ", ".join(l['servicios_incluidos'])
+            print(f"      🎁 Incluye: {servicios_str}")
+        
+        # Aviso inteligente de piscina si existe en el nombre o servicios
+        if "piscina" in l['nombre'].lower() or any("piscina" in s.lower() for s in l.get('servicios_incluidos', [])):
+            print("      ⚠️  NOTA: Este lugar requiere personal de SEGURIDAD obligatorio.")
+            
+        print("-" * 60)
+
+    # --- 4. BUCLE DE SELECCIÓN Y VALIDACIÓN ---
     lugar_elegido = None
     while lugar_elegido is None:
         try:
-            id_lug = int(input("Seleccione ID del lugar (o '0' para cancelar): "))
+            print(f"\n💰 Su presupuesto actual: ${cliente_actual.presupuesto:,.2f}")
+            id_lug = int(input("Seleccione el ID del lugar que desea (o '0' para cancelar): "))
 
             if id_lug == 0:
-                print("Operación cancelada.")
+                print("Operación cancelada por el usuario.")
                 return
 
             # Buscamos en la lista de los que están LIBRES y tienen CAPACIDAD
@@ -226,25 +239,26 @@ def ejecutar_registro_boda():
                 # Validamos si el dinero le alcanza
                 if fg.can_select_lugar(cliente_actual.presupuesto, lugar_seleccionado['precio']):
                     lugar_elegido = lugar_seleccionado
+                    if "piscina" in lugar_elegido['nombre'].lower() or any("piscina" in s.lower() for s in lugar_elegido.get('servicios_incluidos', [])):
+                        print("\n📢 AVISO: Este lugar tiene piscina. El sistema le obligará a contratar Seguridad más adelante.")
 
-                    #Restamos de la temporal, NO del objeto
+                    # Restamos del presupuesto provisional para los siguientes pasos
                     presupuesto_provisional -= lugar_elegido['precio']
 
-                    print(f"\n✅ Sede confirmada: {lugar_elegido['nombre']}")
-                    print(f"💰 Presupuesto estimado restante: ${presupuesto_provisional:,.2f}")
+                    print(f"\n✅ EXCELENTE ELECCIÓN: {lugar_elegido['nombre']}")
+                    print(f"💵 Presupuesto restante para catering y personal: ${presupuesto_provisional:,.2f}")
                     input("\nPresione Enter para continuar a la contratación de personal...")
                 else:
                     print(
-                        f"❌ ¡Presupuesto insuficiente! El salón "
-                        f"'{lugar_seleccionado['nombre']}' cuesta ${lugar_seleccionado['precio']} "
-                        f"y solo tienes ${cliente_actual.presupuesto}."
+                        f"\n❌ ¡PRESUPUESTO INSUFICIENTE! \n"
+                        f"   El salón '{lugar_seleccionado['nombre']}' cuesta ${lugar_seleccionado['precio']:,.2f} \n"
+                        f"   y su límite es de ${cliente_actual.presupuesto:,.2f}."
                     )
             else:
-                print("❌ ID no válido o el lugar no está disponible para estas condiciones.")
+                print("❌ ID no válido o el lugar no cumple con los requisitos de su fecha/invitados.")
 
         except ValueError:
-            print("❌ Por favor, introduce un número válido.")
-
+            print("❌ Error: Por favor, introduce un número de ID válido.")
     # --- PREPARACIÓN DE LISTAS ---
     personal_contratado = []
     servicios_elegidos = []
@@ -363,8 +377,25 @@ def ejecutar_registro_boda():
                 seleccionado = fg.buscar_elemento_id(id_sel, items_categoria, 'id_item')
 
                 if seleccionado:
+                    nombre_nuevo = seleccionado['nombre'].lower()
                     cant = int(input(f"¿Cuántas unidades de '{seleccionado['nombre']}'?: "))
                     costo_total_item = seleccionado['precio_unidad'] * cant
+                    # --- RESTRICCIONES PREVENTIVAS ---
+                    # 1. Conflicto Rock vs DJ
+                    tiene_dj = any("dj" in p.oficio.lower() for p in personal_contratado)
+                    if "rock" in nombre_nuevo and tiene_dj:
+                        print("❌ Conflicto de audio: No se puede contratar Banda de Rock si ya eligió un DJ.")
+                        continue # Regresa al inicio del while sin comprar
+
+                    # 2. Conflicto Mariachis vs Palacio de Cristal
+                    if "mariachi" in nombre_nuevo and "cristal" in lugar_elegido['nombre'].lower():
+                        print("❌ El Palacio de Cristal no admite Mariachis por restricciones de eco.")
+                        continue
+
+                    # 3. Validación de Sillas (Opcional: puedes avisar si faltan)
+                    if "silla" in nombre_nuevo:
+                        if cant < (cliente_actual.invitados * 0.8):
+                            print(f"⚠️ Aviso: {cant} sillas son pocas para {cliente_actual.invitados} invitados.")
 
                     if seleccionado['cantidad'] < cant:
                         print(f"❌ Stock insuficiente. Solo quedan {seleccionado['cantidad']}.")
@@ -422,7 +453,18 @@ def ejecutar_registro_boda():
         return # Aquí detienes el proceso para que no se guarde nada malo
 
     # --- PASO 6: CIERRE Y BLOQUEO ---
+        # --- ANTES DE MOSTRAR EL TOTAL FINAL ---
+    valido, mensaje = fg.val_restricc(personal_contratado, servicios_elegidos, lugar_elegido, cliente_actual.invitados)
+
+    if not valido:
+        print("\n" + "!"*60)
+        print(f" ❌ ATENCIÓN: {mensaje}")
+        print("!"*60)
+        print("No se puede proceder con la reserva. Por favor, revise sus selecciones.")
+        input("Presione Enter para reiniciar el proceso...")
+        return # Esto rompe la función y no guarda nada en el JSON
     # Pasamos las listas para que, si confirma, la función pueda actualizar el stock
+    print("\n✅ Logística validada con éxito.")
     confirmado = fg.approve_cotizacion(
         cotizacion,
         lista_lugares,

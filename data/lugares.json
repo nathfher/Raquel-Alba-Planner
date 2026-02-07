@@ -1,21 +1,15 @@
 [
     {
         "id_lugar": 10,
-        "nombre": "Jard\u00edn de los Cerezos",
+        "nombre": "Jardin de los Cerezos",
         "capacidad": 150,
         "precio": 1500,
         "servicios_incluidos": [
             "Fuente de agua iluminada",
-            "P\u00e9rgola de ceremonias",
-            "Iluminaci\u00f3n ambiental en \u00e1rboles"
+            "Pergola de ceremonias",
+            "Iluminacion ambiental en arboles"
         ],
-        "fechas_ocupadas": [
-            {
-                "fecha": "12/09/2028",
-                "inicio": "12:00",
-                "fin": "18:00"
-            }
-        ]
+        "fechas_ocupadas": []
     },
     {
         "id_lugar": 11,
@@ -27,13 +21,7 @@
             "Escenario para orquesta",
             "Suite para los novios"
         ],
-        "fechas_ocupadas": [
-            {
-                "fecha": "23/08/2034",
-                "inicio": "12:00",
-                "fin": "14:00"
-            }
-        ]
+        "fechas_ocupadas": []
     },
     {
         "id_lugar": 12,
@@ -41,12 +29,10 @@
         "capacidad": 80,
         "precio": 1000,
         "servicios_incluidos": [
-            "Iluminaci\u00f3n Guirnalda (Fairytale Lights)",
+            "Iluminacion Guirnalda (Fairytale Lights)",
             "Pista de baile de ristal sobre la piscina",
             "Fogata Lounge con asientos de cuero"
         ],
-        "fechas_ocupadas": [
-            "12/04/2027"
-        ]
+        "fechas_ocupadas": []
     }
 ]
