@@ -15,13 +15,6 @@ except locale.Error:
         pass
 
 def main():
-    """
-    Punto de entrada principal de la aplicación Wedding Planner.
-    
-    Gestiona el bucle principal de la interfaz de consola, permitiendo al 
-    usuario navegar entre las opciones de registro de nuevas bodas, 
-    consulta del historial financiero y salida del sistema.
-    """
     while True:
         fg.limpiar_pantalla()
         print("=== MENU RAQUEL & ALBA PLANNER ===\n 1.💍 Nueva boda\n 2.📜 Ver Historial\n 3.🚪 Salir")
