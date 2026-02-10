@@ -426,5 +426,15 @@ def val_restricc(personal_contratado, servicios_elegidos, lugar_seleccionado, nu
     tiene_equipo = any("sonido" in s or "parlante" in s for s in nombres_s)
     if necesita_audio and not tiene_equipo:
         return False, "Música detectada: Es obligatorio incluir 'Equipo de Sonido Profesional'."
+# --- REGLA DE LA PISCINA (Esta sí es obligatoria) ---
+    if "terraza" in nombre_lug or "piscina" in nombre_lug:
+        if not any("seguridad" in o for o in oficios_p):
+            return False, "La 'Terraza del Sol' requiere personal de 'Seguridad' por la piscina."
 
-    return True, ""
+    # --- REGLAS DE COHERENCIA (Insumos vs Personal) ---
+    # Si hay florista pero no hay nada con la palabra "flor" en los servicios
+    if any("decoracion" in o for o in oficios_p) and not any("flor" in s for s in nombres_s):
+        # Solo avisamos, no bloqueamos (a menos que tú quieras que sea obligatorio)
+        print("⚠️ Advertencia: El florista no tiene materiales asignados.")
+
+    return True, 

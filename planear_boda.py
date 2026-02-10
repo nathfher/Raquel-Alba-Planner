@@ -91,10 +91,10 @@ def ejecutar_registro_boda():
     # 5. VALIDAR PRESUPUESTO
     while True:
         try:
-            presupuesto_val = float(input("¿Presupuesto máximo? (Mínimo $1500): "))
-            if presupuesto_val >= 1500:
+            presupuesto_val = float(input("¿Presupuesto máximo? (Mínimo $3000): "))
+            if presupuesto_val >= 3000:
                 break
-            print("❌ El presupuesto mínimo aceptado es de $1500.")
+            print("❌ El presupuesto mínimo aceptado es de $3000.")
         except ValueError:
             print("❌ Ingrese un valor numérico (ej: 5000.50).")
 
@@ -278,11 +278,20 @@ def ejecutar_registro_boda():
         tipo = input(mensaje_prompt).lower().strip()
         # 1. Validar que no sea un número (excepto el '0' para salir)
         if tipo == '0':
+    # RESTRICCIÓN PREVENTIVA: Si el lugar tiene piscina, NO puede salir sin Seguridad
+            tiene_piscina = "piscina" in lugar_elegido['nombre'].lower() or any("piscina" in s.lower() for s in lugar_elegido.get('servicios_incluidos', []))
+            tiene_seguridad = any("seguridad" in p.oficio.lower() for p in personal_contratado)
+
+            if tiene_piscina and not tiene_seguridad:
+                print("\n❌ ERROR: El lugar seleccionado tiene piscina. DEBE contratar personal de Seguridad.")
+                input("Presione Enter para volver a la selección de personal...")
+                continue # No lo deja salir del bucle de personal
             break
-        oficios_validos = ["fotografia", "seguridad", "estetica", "planificador", "decoracion", "barman"]
+        oficios_validos = ["fotografia", "seguridad", "estetica", "planificador", "flores","iuminacion", "barman"]
         if tipo not in oficios_validos:
             print(f"❌ '{tipo}' no es una opción válida.")
             print(f"Opciones aceptadas: {', '.join(oficios_validos)}")
+            input("Presione Enter para volver a elegir el oficio...")
             continue
         pers_libres = fg.get_personal_disponible(tipo, lista_personal, fecha_str, h_ini, h_fin)
 
@@ -319,7 +328,6 @@ def ejecutar_registro_boda():
                     presupuesto_provisional -= sueldo_p
                     exp_p = dict_p.get('experiencia', 'Estándar')
                     personal_contratado.append(Personal(dict_p['id_personal'], dict_p['nombre'], dict_p['oficio'], sueldo_p,exp_p))
-
                     print(f"\n✅ CONFIRMADO: {dict_p['nombre']} como {oficio_p}.")
                     print(f"💰 Dinero restante estimado: ${presupuesto_provisional:,.2f}")
                 # Está fuera de los IFs de éxito/error, así que siempre se detiene.
@@ -332,6 +340,8 @@ def ejecutar_registro_boda():
         except ValueError:
             print("⚠️ Error: Use solo números para el ID.")
             input("Presione Enter...") # PAUSA 4
+    tiene_florista = any(p.oficio.lower() == "flores" for p in personal_contratado)
+    tiene_iluminador = any(p.oficio.lower() == "iluminacion" for p in personal_contratado)
 
     # Cubrimos: catering, bebida, postre, mobiliario, tecnologia y decoracion
     categorias_inv = ["catering", "bebida", "postre", "mobiliario", "tecnologia", "decoracion"]
@@ -341,12 +351,16 @@ def ejecutar_registro_boda():
         titulo = f"--- PASO 4: SELECCIÓN DE {cat.upper()} ---"
         print(titulo)
         print(f"💰 Presupuesto disponible: ${presupuesto_provisional:,.2f}\n")
+        if cat == "decoracion":
+            if tiene_florista:
+                print("🌸 [SISTEMA] Tienes un Florista. Busca 'Flores' o 'Arco' en esta lista.")
+            if tiene_iluminador:
+                print("💡 [SISTEMA] Tienes un Iluminador. Busca 'LED', 'Lámpara' o 'Guirnalda'.")
 
         items_categoria = []
         for i in lista_inventario:
             if i.get('categoria') == cat:
                 items_categoria.append(i)
-
         if not items_categoria:
             continue
 
@@ -370,6 +384,21 @@ def ejecutar_registro_boda():
     while True:
         op = input(f"\nID de {cat} (o '0' para siguiente categoría): ").strip()
         if op == '0':
+            # >>> RESTRICCIÓN DE SALIDA PARA DECORACIÓN <<<
+            if cat == "decoracion":
+                nombres_comprados = [item.nombre.lower() for item in servicios_elegidos]
+
+                # Validación Florista
+                if tiene_florista and not any("flor" in n for n in nombres_comprados):
+                    print("\n❌ LOGÍSTICA INCOMPLETA: Contrató un Florista pero no compró Flores.")
+                    input("Presione Enter para volver y añadir arreglos florales...")
+                    continue # Te devuelve al input de IDs de esta categoría
+
+                # Validación Iluminación
+                if tiene_iluminador and not any(x in n for n in nombres_comprados for x in ["luz", "led", "lampara"]):
+                    print("\n❌ LOGÍSTICA INCOMPLETA: Contrató Iluminación pero no compró luces.")
+                    input("Presione Enter para volver y añadir equipos de iluminación...")
+                    continue
             break
 
         try:
