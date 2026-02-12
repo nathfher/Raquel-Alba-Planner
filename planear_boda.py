@@ -114,6 +114,13 @@ def ejecutar_registro_boda():
             if fecha_boda < datetime.now():
                 print("❌ No puedes elegir una fecha pasada. ¡Planificamos el futuro!")
                 continue
+            # 2. Validar el límite de 2 años (Evita el año 2100)
+            hoy = datetime.now
+            limite_futuro = hoy + timedelta(days=730) # 2 años aprox.
+            if fecha_boda > limite_futuro:
+                print("⚠️ Error: No aceptamos reservas con más de 2 años de antelación.")
+                print(f"El límite máximo es: {limite_futuro.strftime('%d/%m/%Y')}")
+                continue
             fecha_str = fecha_input
             break # Fecha válida, pasamos a la hora
         except ValueError:
@@ -267,7 +274,10 @@ def ejecutar_registro_boda():
     while True:
         fg.limpiar_pantalla()
         print(f"--- PASO 3: PERSONAL (Dinero disponible: ${presupuesto_provisional:,.2f}) ---")
-        mensaje_prompt = "\n¿Qué oficio busca? (Fotografia, Seguridad, Estetica, Planificador, Flores, Iluminacion, Barman / '0' para finalizar): "
+
+        mensaje_prompt = ("\n¿Qué oficio busca? (Fotografia, Seguridad, Estetica, "
+                        "Planificador, Flores, Iluminacion, Barman / '0' para finalizar): "
+)
         tipo = input(mensaje_prompt).lower().strip()
 
         if tipo == '0':
@@ -278,7 +288,7 @@ def ejecutar_registro_boda():
             if tiene_piscina and not tiene_seguridad:
                 print("\n❌ BLOQUEO DE SEGURIDAD: El lugar tiene piscina. DEBE contratar Seguridad.")
                 input("Presione Enter para volver...")
-                continue 
+                continue
             break
         oficios_validos = ["fotografia", "seguridad", "estetica", "planificador", "flores", "iluminacion", "barman"]
         if tipo not in oficios_validos:

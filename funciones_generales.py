@@ -273,23 +273,23 @@ def guardar_reserva_json(cotizacion):
 def liberar_recursos(cotizacion, lista_lugares, lista_personal, lista_inventario):
     fecha_boda = cotizacion['fecha']
 
-    
+
     lugar = buscar_elemento_id(cotizacion['id_lugar'], lista_lugares, 'id_lugar')
     if lugar:
         lugar['fechas_ocupadas'] = [f for f in lugar['fechas_ocupadas'] if f['fecha'] != fecha_boda]
 
-    
+
     for p_contratado in cotizacion['personal_contratado']:
-       
+
         id_a_liberar = getattr(p_contratado, 'id_personal', None) or p_contratado.get('id_personal')
-        
+
         p_maestro = buscar_elemento_id(id_a_liberar, lista_personal, 'id_personal')
-        
+
         if p_maestro:
-           
+
             p_maestro['fechas_ocupadas'] = [f for f in p_maestro.get('fechas_ocupadas', []) 
                                             if f.get('fecha') != fecha_boda]
-    
+
     for servicio in cotizacion['items_pedidos']:
         for item_inv in lista_inventario:
             if item_inv['id_item'] == servicio.id_item_reserva:
@@ -332,7 +332,7 @@ def generar_ticket(cliente, lugar, personal, servicios, subtotal, comision, tota
         f.write("\n------------------------------------------\n")
         # Uso de 'subtotal', 'comision' y 'total'
         f.write(f"SUBTOTAL: ${subtotal:.2f}\n")
-        f.write(f"COMISIÓN (15%): ${comision:.2f}\n")
+        f.write(f"COMISIÓN (10%): ${comision:.2f}\n")
         f.write(f"TOTAL FINAL: ${total:.2f}\n")
         f.write("------------------------------------------\n")
         f.write("\n¡Gracias por confiar en nosotros!")
@@ -364,34 +364,44 @@ def imprimir_tabla_personal(lista_disponibles):
     print("-" * 65)
 
 def ver_historial():
-
+    # Limpiamos antes de mostrar para que se vea ordenado
+    limpiar_pantalla() 
     print("==========================================")
-    print("       HISTORIAL DE BODAS REGISTRADAS     ")
+    print("      HISTORIAL DE BODAS REGISTRADAS      ")
     print("==========================================\n")
 
-    # Usamos tu función de seguridad para cargar el archivo
+    # Cargamos el archivo
     reservas = ensure_file_exist('data/historial_reservas.json', [])
     ganancia_total_empresa = 0
+
     if not reservas:
         print("⚠️ No se encontraron bodas registradas en el historial.")
     else:
         # Recorremos cada reserva guardada
         for i, boda in enumerate(reservas, 1):
-            # Accedemos a los datos navegando por las llaves del diccionario
-            # Recuerda que 'cliente' ahora es un diccionario porque usaste to_dict()
-            nombre_cliente = boda.get('cliente', 'Cliente Desconocido')
-            total = boda['total_final']
-            comision = boda.get('comision', 0) # <--- Extraemos la comisión
-            ganancia_total_empresa += comision # <--- Sumamos
+            # En tu código anterior usaste to_dict() para el cliente
+            # Asegúrate de extraer el nombre correctamente si es un diccionario
+            cliente_data = boda.get('cliente', {})
+            nombre_cliente = cliente_data.get('nombre', 'Desconocido') if isinstance(cliente_data, dict) else cliente_data
+
+            total = boda.get('total_final', 0)
+            comision = boda.get('comision', 0)
+            ganancia_total_empresa += comision
 
             print(f"{i}. CLIENTE: {nombre_cliente}")
-            print(f"   TOTAL: ${total:.2f} | COMISIÓN EMPRESA: ${comision:.2f}")
-            print("-" * 40)
-            # Opcional: Mostrar cuántos servicios contrató
+            print(f"   TOTAL: ${total:,.2f} | COMISIÓN EMPRESA: ${comision:,.2f}")
+
             cant_servicios = len(boda.get('servicios', []))
             print(f"   SERVICIOS: {cant_servicios} contratados")
             print("-" * 40)
-            
+
+        # Resumen final de ganancias
+        print(f"\n💰 GANANCIA TOTAL ACUMULADA: ${ganancia_total_empresa:,.2f}")
+
+    # --- EL INPUT QUE NECESITABAS ---
+    print("\n" + "="*40)
+    input("Presione Enter para volver al menú principal...")
+
 def val_restricc(personal_contratado, servicios_elegidos, lugar_seleccionado, num_invitados):
     """
     Valida que la logística de la boda sea coherente según el personal, 
