@@ -380,61 +380,46 @@ def ver_historial():
             cant_servicios = len(boda.get('servicios', []))
             print(f"   SERVICIOS: {cant_servicios} contratados")
             print("-" * 40)
-
+            
 def val_restricc(personal_contratado, servicios_elegidos, lugar_seleccionado, num_invitados):
-
+    """
+    Valida que la logística de la boda sea coherente según el personal, 
+    objetos elegidos, lugar y cantidad de invitados.
+    """
     oficios_p = [p.oficio.lower().strip() for p in personal_contratado]
+    # Usamos .nombre si son objetos de clase ItemReserva, o ['nombre'] si son diccionarios
     nombres_s = [s.nombre.lower().strip() for s in servicios_elegidos]
-
     nombre_lug = lugar_seleccionado['nombre'].lower()
 
-    # 1. Validaciones de Personal vs Servicios
-    if any("cocteleria" in s or "barra libre" in s for s in nombres_s):
-        if not any("barman" in o or "sommelier" in o for o in oficios_p):
-            return False, "La 'Barra Libre' requiere contratar al 'Sommelier / Barman'."
-
-    if any("violin" in s for s in nombres_s):
-        if not any("maestro de ceremonias" in o for o in oficios_p):
-            return False, "El 'Solo de Violín' requiere un 'Maestro de Ceremonias'."
-
-    # 2. Restricciones por Lugar
-    if "cristal" in nombre_lug and any("mariachi" in s for s in nombres_s):
-        return False, "El Palacio de Cristal no admite Mariachis por restricciones de eco."
-
-    if "terraza" in nombre_lug and not any("seguridad" in o for o in oficios_p):
-        return False, "La 'Terraza del Sol' requiere 'Seguridad' obligatorio por la piscina."
-
-    # 3. Conflictos de Audio
-    tiene_dj = any("dj" in o for o in oficios_p)
-    tiene_rock = any("rock" in s for s in nombres_s)
-    if tiene_dj and tiene_rock:
-        return False, "Conflicto de audio: No se puede contratar DJ y Banda de Rock simultáneamente."
-
-    # 4. Mobiliario: Sillas (80%)
+    # 1. USO DE num_invitados: Validación de Sillas (Mínimo 80% de los invitados)
     cant_sillas = sum(s.cantidad_requerida for s in servicios_elegidos if "silla" in s.nombre.lower())
-    if num_invitados > 0 and cant_sillas < (num_invitados * 0.8):
-        return False, f"Mobiliario insuficiente: Tiene {cant_sillas} sillas para {num_invitados} invitados (Mín. 80%)."
+    sillas_min = int(num_invitados * 0.8)
+    if cant_sillas < sillas_min:
+        return False, f"Mobiliario insuficiente: Tiene {cant_sillas} sillas para {num_invitados} invitados (Mín. {sillas_min})."
 
-    # 5. NUEVA RESTRICCIÓN: Mesas (1 por cada 10 invitados)
+    # 2. USO DE num_invitados: Validación de Mesas (1 cada 10 invitados)
     cant_mesas = sum(s.cantidad_requerida for s in servicios_elegidos if "mesa" in s.nombre.lower())
-    mesas_necesarias = int(num_invitados / 10)
-    if num_invitados > 0 and cant_mesas < mesas_necesarias:
-        return False, f"Mobiliario insuficiente: Tiene {cant_mesas} mesas para {num_invitados} invitados (Mín. 1 mesa/10 pers)."
+    mesas_min = int(num_invitados / 10)
+    if num_invitados > 0 and cant_mesas < mesas_min:
+        return False, f"Mobiliario insuficiente: Tiene {cant_mesas} mesas para {num_invitados} invitados (Mín. {mesas_min})."
 
-    # 6. Requerimiento de Audio Profesional
+    # 3. Coherencia de Barra
+    if any("cocteleria" in s or "barra libre" in s for s in nombres_s):
+        if not any(o in ["barman", "sommelier"] for o in oficios_p):
+            return False, "La 'Barra Libre' requiere contratar personal de 'Barman' o 'Sommelier'."
+
+    # 4. Requerimiento de Audio Profesional
     necesita_audio = any(m in s for s in nombres_s for m in ["dj", "rock", "banda", "mariachi"])
     tiene_equipo = any("sonido" in s or "parlante" in s for s in nombres_s)
     if necesita_audio and not tiene_equipo:
         return False, "Música detectada: Es obligatorio incluir 'Equipo de Sonido Profesional'."
-# --- REGLA DE LA PISCINA (Esta sí es obligatoria) ---
-    if "terraza" in nombre_lug or "piscina" in nombre_lug:
-        if not any("seguridad" in o for o in oficios_p):
-            return False, "La 'Terraza del Sol' requiere personal de 'Seguridad' por la piscina."
 
-    # --- REGLAS DE COHERENCIA (Insumos vs Personal) ---
-    # Si hay florista pero no hay nada con la palabra "flor" en los servicios
-    if any("decoracion" in o for o in oficios_p) and not any("flor" in s for s in nombres_s):
-        # Solo avisamos, no bloqueamos (a menos que tú quieras que sea obligatorio)
-        print("⚠️ Advertencia: El florista no tiene materiales asignados.")
+    # 5. Piscina y Seguridad (Obligatorio)
+    # Revisa tanto el nombre del lugar como los servicios incluidos en el JSON
+    tiene_piscina = "piscina" in nombre_lug or any("piscina" in serv.lower() for serv in lugar_seleccionado.get('servicios_incluidos', []))
+    if tiene_piscina:
+        if "seguridad" not in oficios_p:
+            return False, f"El lugar '{lugar_seleccionado['nombre']}' tiene piscina y requiere personal de 'Seguridad'."
 
-    return True, 
+    # Si todo pasa, devolvemos True y string vacío
+    return True, ""
