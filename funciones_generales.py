@@ -250,11 +250,11 @@ def limpiar_pantalla():
         os.system('clear')
 
 def guardar_reserva_json(cotizacion):
-    
-    nombre_archivo = 'data/historial_reservas.json'
+
+    nombre_archivo = 'data/reservas.json'
 
     historial = ensure_file_exist(nombre_archivo, [])
-    boda_para_guardar = cotizacion.copy() 
+    boda_para_guardar = cotizacion.copy()
 
     boda_para_guardar['personal_contratado'] = [
         vars(p) if hasattr(p, '__dict__') else p for p in cotizacion['personal_contratado']
@@ -371,7 +371,7 @@ def ver_historial():
     print("==========================================\n")
 
     # Cargamos el archivo
-    reservas = ensure_file_exist('data/historial_reservas.json', [])
+    reservas = ensure_file_exist('data/reservas.json', [])
     ganancia_total_empresa = 0
 
     if not reservas:
