@@ -6,7 +6,7 @@ Sistema integral de planificación de bodas inspirado en la serie *La que se ave
 ## 1. Requisitos del Sistema
 Para ejecutar este programa, su computadora debe cumplir con lo siguiente:
 * **Lenguaje:** Python 3.8 o superior.
-* **Librerías:** No requiere instalaciones externas (usa librerías estándar como `json`, `os`, `datetime` y `locale`).
+* **Librerías:** No requiere instalaciones externas (usa librerías estándar como `json`, `os`, `re`, `datetime` y `locale`).
 * **Sistema Operativo:** Compatible con Windows, Linux y macOS (el sistema detecta el SO para configurar las fechas en español y limpiar la consola).
 
 ## 2. Estructura de Archivos
@@ -18,7 +18,7 @@ Para ejecutar este programa, su computadora debe cumplir con lo siguiente:
 
 ## 3. Instalación y Ejecución
 1. Descargue o clone el repositorio en su PC.
-2. Asegúrese de que la carpeta `data/` contenga los archivos: `lugares.json`, `personal.json`, `inventario.json` y `clientes.json`.
+2. Asegúrese de que la carpeta `data/` contenga los archivos: `lugares.json`, `personal.json`, `inventario.json`, `clientes.json` y `reservas.json`.
 3. Abra una terminal en la carpeta del proyecto.
 4. Ejecute el comando:
    ```bash

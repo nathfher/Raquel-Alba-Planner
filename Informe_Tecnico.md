@@ -30,13 +30,15 @@ Ratio de Asientos: El sistema calcula dinámicamente que el mobiliario reservado
 4.  **Seguridad Preventiva y Logistica:** 
 **Gestión de Riesgos: Se impone la contratación de Personal de Seguridad de forma obligatoria para la sede "Terraza del Sol" debido a la presencia de riesgos físicos (piscina).
 
-**Validación Temporal: Se implementó un algoritmo de detección de colisiones que impide reservar un lugar o trabajador si existe un cruce de horarios, contemplando incluso eventos que cruzan la medianoche.
-
+6. **Restricción de Duración Mínima:**
+Se estableció un umbral de 120 minutos (2 horas) mediante el cálculo de `timedelta`. Esto asegura que los contratos con proveedores de música y catering sean rentables y operativos.
 
 ## IV. Problemas Enfrentados durante el Desarrollo
 * **Gestión de Codificación:** Se presentó un conflicto con caracteres especiales (ñ, acentos) al serializar los archivos JSON. Se resolvió mediante la estandarización de codificación UTF-8 y el parámetro `ensure_ascii=False`.
 * **Normalización de Tiempos:** El cálculo de intervalos que cruzan la medianoche representó un desafío logístico. Se solucionó mediante el uso de la librería `datetime` y objetos `timedelta` para verificar colisiones en reservas nocturnas.
 * **Validación de Salida:** Inicialmente, los errores de stock se notificaban al final del proceso. Se rediseñó el flujo para incluir validaciones preventivas inmediatamente después de la selección de cada categoría, mejorando la experiencia del usuario.
+* **Visualización y Formateo de Datos (PEP 8):** Uno de los retos fue presentar tablas de inventario legibles en consola sin exceder los límites de caracteres por línea. Se resolvió desacoplando las cadenas de formato de las variables y utilizando técnicas de *f-string splitting* para mantener el código limpio y cumplir con los estándares de documentación (Docstrings).
+* **Limpieza de Código y Estándares:** Se realizó una refactorización para eliminar el error de "Line too long" y se añadieron encabezados de documentación a cada módulo para facilitar el mantenimiento futuro del software.
 
 ## V. Conclusión
 La implementación demuestra que la gestión de eventos complejos requiere un balance entre flexibilidad y restricciones estrictas. El uso de validaciones intermedias asegura que no se generen compromisos de recursos imposibles de cumplir.

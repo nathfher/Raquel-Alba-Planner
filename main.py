@@ -1,3 +1,8 @@
+"""
+Módulo principal del planificador de bodas para 'Raquel & Alba'.
+Gestiona el menú de inicio, la configuración de idioma (locale) 
+y el arranque de los módulos de planificación y registro.
+"""
 import locale
 import funciones_generales as fg
 import planear_boda as pb # Importamos el otro archivo
@@ -15,6 +20,9 @@ except locale.Error:
         pass
 
 def main():
+    """
+    Función de entrada que controla el bucle principal de la aplicación.
+    """
     while True:
         fg.limpiar_pantalla()
         print("=== MENU RAQUEL & ALBA PLANNER ===\n 1.💍 Nueva boda\n 2.📜 Ver Historial\n 3.🚪 Salir")

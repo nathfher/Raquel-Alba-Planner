@@ -1,8 +1,17 @@
+"""
+Módulo de registro y planificación de eventos para 'Raquel & Alba'.
+Este módulo gestiona el flujo principal de contratación de personal,
+selección de lugar y validación de presupuestos.
+"""
 from datetime import datetime,timedelta
+import re
 import funciones_generales as fg
 from modulos import Cliente, Personal, ItemReserva
 
 def ejecutar_registro_boda():
+    """
+    Ejecuta el asistente interactivo para registrar una nueva boda.
+    """
 
     fg.limpiar_pantalla()
     print("=================================================")
@@ -44,7 +53,7 @@ def ejecutar_registro_boda():
     # 2. VALIDAR NOMBRE
     while True:
         name_client = input("Ingrese nombre completo: ").strip()
-        
+
         # 1. Verificamos que no esté vacío después del strip
         if not name_client:
             print("⚠️ El nombre no puede estar vacío.")
@@ -52,7 +61,34 @@ def ejecutar_registro_boda():
 
         # 2. Reemplazamos espacios para validar solo letras
         # Esto permite nombres como "Raquel García" pero bloquea "Raquel_García"
+        palabras = name_client.lower().split()
         solo_letras = name_client.replace(" ", "")
+        # --- NUEVAS VALIDACIONES ---
+
+        # A. Evitar palabras repetidas (ej: "pedro pedro pedro")
+        repetida = False
+        for p in palabras:
+            if palabras.count(p) > 2: # Si una palabra está más de 2 veces
+                repetida = True
+                break
+
+        # B. Evitar "disparates" (muchas consonantes juntas)
+        # Si hay más de 4 consonantes seguidas, probablemente es basura
+
+        tiene_basura = re.search(r'[^aeiouáéíóúü\s]{5,}', name_client.lower())
+
+        if len(name_client) < 8:
+            print("⚠️ Nombre demasiado corto.")
+        elif not solo_letras.isalpha():
+            print("⚠️ Solo se permiten letras.")
+        elif repetida:
+            print("⚠️ No repitas tanto la misma palabra, ingresa un nombre real.")
+        elif tiene_basura:
+            print("⚠️ El nombre parece inválido (demasiadas letras aleatorias).")
+        else:
+            # Si pasa todo, lo ponemos bonito (Primera Letra Mayúscula)
+            name_client = name_client.title()
+            break
 
         # 3. Validaciones combinadas:
         if len(name_client) < 8:
@@ -66,37 +102,81 @@ def ejecutar_registro_boda():
     while True:
         correo_temp = input("Ingrese correo (@gmail.com): ").lower().strip()
 
+        if " " in correo_temp:
+            print("❌ El correo no puede contener espacios. Escríbalo todo junto.")
+            continue
+
         # Verificamos que tenga un '@', que termine en '@gmail.com'
         # y que haya algo antes del '@'
         if "@gmail.com" in correo_temp and correo_temp.endswith("@gmail.com"):
             # Extraemos la parte antes del @ para ver si es válida
             usuario = correo_temp.split('@')[0]
-            if len(usuario) > 2:
-                break # Correo válido
-            else:
+            # Si el usuario tiene 5 o más consonantes seguidas, es sospechoso
+            es_basura = re.search(r'[^aeiou0-9]{5,}', usuario)
+            if len(usuario) < 4:
                 print("❌ El nombre de usuario del correo es muy corto.")
+            elif es_basura:
+                print("❌ El correo parece inválido (demasiadas letras aleatorias).")
+            else:
+                # Si pasa todo, salimos
+                break
         else:
             print("❌ Correo inválido. Asegúrese de que termine exactamente en @gmail.com")
 
-    # 4. VALIDAR INVITADOS (Con su propio try/except)
+# 4. VALIDAR INVITADOS (Con lógica de evento real)
     while True:
         try:
-            invitados_val = int(input("¿Cuántos invitados espera? (Máx. 350): "))
-            if 0 < invitados_val <= 350:
-                break
-            print("⚠️ Cantidad inválida. El límite de nuestros salones es 350.")
+            invitados_val = int(input("¿Cuántos invitados espera? (30 - 350): "))
+            if invitados_val < 0:
+                print("\n❌ ERROR: El presupuesto no puede ser negativo.")
+                print("   Por favor, ingrese un monto real (sin signos de menos).")
+                continue
+
+            if invitados_val < 30:
+                print("⚠️ Lo sentimos. El mínimo aceptado para que la "
+                        "logística sea viable es de 30 personas.")
+                continue
+
+            if invitados_val > 350:
+                print("⚠️ Cantidad excedida. El límite de nuestros salones es 350 invitados.")
+                continue
+
+            # Si llega aquí, es porque está entre 30 y 350
+            break
+
         except ValueError:
-            print("❌ Ingrese un número entero para la cantidad de invitados.")
+            print("❌ Error: Ingrese un número entero (ej: 150).")
 
     # 5. VALIDAR PRESUPUESTO
+# 5. VALIDAR PRESUPUESTO
     while True:
         try:
             presupuesto_val = float(input("¿Presupuesto máximo? (Mínimo $3000): "))
-            if presupuesto_val >= 3000:
-                break
-            print("❌ El presupuesto mínimo aceptado es de $3000.")
+
+            # 1. Filtro de números negativos (La muela de coherencia)
+            if presupuesto_val < 0:
+                print("\n❌ ERROR: El presupuesto no puede ser negativo.")
+                print("   Por favor, ingrese un monto real (sin signos de menos).")
+                continue
+
+            # 2. Filtro de presupuesto insuficiente
+            if presupuesto_val < 4000:
+                print("\n❌ PRESUPUESTO INSUFICIENTE: El mínimo para iniciar es de $4000.")
+                print("   Nuestros estándares de calidad requieren una inversión mayor.")
+                continue
+
+            # 3. Filtro de presupuesto exagerado (El límite de "billonarios")
+            if presupuesto_val > 1000000:
+                print("\n🧐 ¡WOW!: Ese es un presupuesto digno de la Realeza.")
+                print("   Por seguridad, el límite para cotizaciones automáticas es de $1,000,000.")
+                print("   Si es más rico que eso, contacte a Raquel directamente por teléfono. 😉")
+                continue
+
+            # Si pasó todos los filtros anteriores, el dato es correcto
+            break
+
         except ValueError:
-            print("❌ Ingrese un valor numérico (ej: 5000.50).")
+            print("\n❌ FORMATO INCORRECTO: Ingrese solo números (ej: 50000). No use puntos de mil.")
 
     # AL FINAL: Creamos el objeto una sola vez
     cliente_actual = Cliente(id_client, name_client, correo_temp, invitados_val, presupuesto_val)
@@ -150,23 +230,23 @@ def ejecutar_registro_boda():
                 t_fin = datetime.strptime(h_fin, "%H:%M")
 
                 # --- 1. AJUSTE DE MEDIA NOCHE ---
-                # Si fin es menor que inicio (ej: 02:00 < 22:00), sumamos un día
                 if t_fin < t_ini:
                     t_fin = t_fin + timedelta(days=1)
 
-                # --- 2. CÁLCULO REAL ---
+                # --- 2. CÁLCULO PARA VALIDAR ---
                 diferencia = t_fin - t_ini
                 total_segundos = diferencia.total_seconds()
-                segundos_minimos = 2 * 3600 # 2 horas
+                segundos_minimos = 2 * 3600
 
-                # --- 3. VALIDACIONES DE NEGOCIO ---
+                # --- 3. VALIDACIONES ---
                 if t_fin == t_ini:
                     print("❌ La hora de fin no puede ser igual a la de inicio.")
                 elif total_segundos < segundos_minimos:
                     minutos_reales = total_segundos / 60
-                    print(f"❌ Duración insuficiente. Mínimo 2 horas (Su evento dura: {minutos_reales:.0f} min).")
+                    print(f"❌ Duración insuficiente. Mínimo 2 horas "
+                          f"(Su evento dura: {minutos_reales:.0f} min).")
                 else:
-                    # PERFECTO
+                    # SI ESTÁ BIEN, SALIMOS
                     break
 
             except ValueError:
@@ -176,14 +256,18 @@ def ejecutar_registro_boda():
 
         input("Presione Enter para reintentar...")
 
-    # Fuera del bucle, confirmamos éxito
-        horas_finales = (t_fin - t_ini).total_seconds() / 3600
-        print(f"✅ Horario confirmado. Duración total: {horas_finales:.1f} horas.")
-        input("\nPresione Enter para continuar con la selección del lugar...")
+    # --- FUERA DEL BUCLE: AQUÍ HACEMOS EL CÁLCULO FINAL ---
+    diferencia_final = t_fin - t_ini
+    total_horas = diferencia_final.total_seconds() / 3600
+    horas = int(total_horas)
+    minutos = int((total_horas * 60) % 60)
 
+    print("\n✅ Horario confirmado.")
+    print(f"⏱️  Duración total: {horas}h {minutos}min")
+    input("\nPresione Enter para continuar con la selección del lugar...")
 # --- PASO 3: SELECCIÓN DE LUGAR (Bucle único y limpio) ---
     lugar_elegido = None
-    presupuesto_provisional = cliente_actual.presupuesto 
+    presupuesto_provisional = cliente_actual.presupuesto
 
     while lugar_elegido is None:
         fg.limpiar_pantalla()
@@ -208,24 +292,32 @@ def ejecutar_registro_boda():
             if opc == '1':
                 fecha_str = input("Nueva fecha (DD/MM/AAAA): ")
                 invitados_val = int(input("Cantidad de invitados: "))
-                continue 
+                continue
             else:
-                return 
+                return
 
         # 3. MOSTRAR FICHAS DESCRIPTIVAS
         for l in lugares_libres:
             print(f"ID: {str(l['id_lugar']).ljust(3)} | 🏛️  {l['nombre'].upper()}")
-            print(f"      👥 Capacidad: {str(l['capacidad']).rjust(3)} pers. | 💰 Precio: ${l['precio']:>8.2f}")
+            cap = str(l['capacidad']).rjust(3)
+            precio_f = f"{l['precio']:>8.2f}"
+            print(f"      👥 Capacidad: {cap} pers. | 💰 Precio: ${precio_f}")
             if l.get('servicios_incluidos'):
-                print(f"      🎁 Incluye: {', '.join(l['servicios_incluidos'])}")
-            if "piscina" in l['nombre'].lower() or any("piscina" in s.lower() for s in l.get('servicios_incluidos', [])):
+                servicios_txt = ", ".join(l['servicios_incluidos'])
+                print(f"      🎁 Incluye: {servicios_txt}")
+            nombre_piscina = "piscina" in l['nombre'].lower()
+            servicios_piscina = any(
+                "piscina" in s.lower() 
+                for s in l.get('servicios_incluidos', [])
+            )
+            if nombre_piscina or servicios_piscina:
                 print("      ⚠️  NOTA: Requiere SEGURIDAD obligatorio.")
-            print("-" * 60)
+
 
         # 4. SELECCIÓN Y VALIDACIÓN ECONÓMICA
         try:
             id_selec = int(input("\nIngrese el ID del lugar para reservar (0 para cancelar): "))
-            if id_selec == 0: 
+            if id_selec == 0:
                 return
 
             # Buscamos el lugar seleccionado
@@ -237,12 +329,14 @@ def ejecutar_registro_boda():
                     lugar_elegido = seleccionado
                     # RESTA REAL
                     presupuesto_provisional -= lugar_elegido['precio']
-                    
+
                     print(f"✅ ¡'{lugar_elegido['nombre']}' reservado con éxito!")
                     print(f"💵 Presupuesto restante: ${presupuesto_provisional:,.2f}")
                     input("\nPresione Enter para continuar al personal...")
                 else:
-                    print(f"❌ PRESUPUESTO INSUFICIENTE. El salón cuesta ${seleccionado['precio']:,.2f}")
+                    costo_salon = seleccionado['precio']
+                    print(f"❌ PRESUPUESTO INSUFICIENTE. "
+                        f"El salón cuesta ${costo_salon:,.2f}")
                     input("Presione Enter para intentar con otro...")
             else:
                 print("❌ ID no válido o no disponible en esta fecha.")
@@ -252,50 +346,68 @@ def ejecutar_registro_boda():
             print("❌ Error: Ingrese un número de ID válido.")
             input("Presione Enter...")
 
-    # Aquí el programa ya sale con lugar_elegido definido y presupuesto restado.
+
 # --- PASO 4: CONTRATACIÓN DE PERSONAL ---
     personal_contratado = []
     servicios_elegidos = []
+
     while True:
         fg.limpiar_pantalla()
 
-        # Mostramos quiénes ya están en el equipo para no perder la cuenta
+        # 1. CABECERA DINÁMICA
         equipo_nombres = [p.nombre for p in personal_contratado]
-        print(f"{'='*60}")
-        print(f"--- PASO 4: PERSONAL (Disponible: ${presupuesto_provisional:,.2f}) ---")
+        print("="*60)
+        print(f"--- PASO 4: PERSONAL (Presupuesto: ${presupuesto_provisional:,.2f}) ---")
         print(f"Equipo actual: {', '.join(equipo_nombres) if equipo_nombres else 'Ninguno'}")
-        print(f"{'='*60}")
+        print("="*60)
 
-        mensaje_prompt = ("\n¿Qué oficio busca? (Fotografia, Seguridad, Estetica, "
-                          "\nPlanificador, Flores, Iluminacion, Barman / '0' para finalizar): ")
-        tipo = input(mensaje_prompt).lower().strip()
+        # 2. SELECCIÓN DE OFICIO
+        print("\nOficios disponibles: Fotografia, Seguridad, Estetica, "
+              "Planificador, Flores, Iluminacion, Barman")
+        tipo = input("¿Qué oficio busca? (o '0' para finalizar): ").lower().strip()
 
+        # --- SALIDA Y VALIDACIÓN BLOQUEANTE ---
         if tipo == '0':
             # Validación de Seguridad/Piscina
-            tiene_piscina = "piscina" in lugar_elegido['nombre'].lower() or \
-                            any("piscina" in s.lower() for s in lugar_elegido.get('servicios_incluidos', []))
-            tiene_seguridad = any("seguridad" in p.oficio.lower() for p in personal_contratado)
+            tiene_piscina = (
+                "piscina" in lugar_elegido['nombre'].lower() or 
+                any("piscina" in s.lower()
+                    for s in lugar_elegido.get('servicios_incluidos', []))
+            )
 
+            tiene_seguridad = any(
+                "seguridad" in p.oficio.lower() 
+                for p in personal_contratado
+            )
             if tiene_piscina and not tiene_seguridad:
-                print("\n❌ BLOQUEO: El lugar tiene piscina. DEBE contratar Seguridad.")
-                input("Presione Enter para volver...")
+                print("\n" + "!"*60)
+                print("❌ ERROR DE SEGURIDAD: El lugar tiene piscina. DEBE contratar Seguridad.")
+                print("!"*60)
+                input("Presione Enter para volver a contratar...")
                 continue
-            break
+            break # Sale del bucle de personal
 
-        oficios_validos = ["fotografia", "seguridad", "estetica", "planificador", "flores", "iluminacion", "barman"]
+        # 3. VALIDAR OFICIO EXISTENTE
+        oficios_validos = [
+            "fotografia", "seguridad", "estetica", "planificador", 
+            "flores", "iluminacion", "barman"
+        ]
         if tipo not in oficios_validos:
-            print(f"❌ '{tipo}' no es un oficio válido.")
+            print(f"\n❌ ERROR: '{tipo}' no es una categoría válida.")
+            print(f"👉 Solo puede elegir entre: {', '.join(oficios_validos)}")
+            print("⚠️ Asegúrese de escribirlo correctamente y sin puntos.")
             input("Presione Enter para reintentar...")
             continue
 
-        # Búsqueda real de disponibles
+        # 4. BÚSQUEDA DE DISPONIBLES
         pers_libres = fg.get_personal_disponible(tipo, lista_personal, fecha_str, h_ini, h_fin)
 
         if not pers_libres:
-            print(f"❌ No hay {tipo} disponible para esa fecha/hora.")
-            input("Presione Enter para volver...")
+            print(f"\n❌ No hay personal de {tipo.upper()} disponible para el {fecha_str}.")
+            input("Presione Enter para buscar otro oficio...")
             continue
 
+        # 5. MOSTRAR TABLA Y SELECCIÓN
         fg.imprimir_tabla_personal(pers_libres)
 
         try:
@@ -303,22 +415,24 @@ def ejecutar_registro_boda():
             if id_p == 0:
                 continue
 
-            # Buscar solo entre los que están LIBRES
+            # Buscar el objeto real en la lista de libres
             dict_p = fg.buscar_elemento_id(id_p, pers_libres, 'id_personal')
 
             if dict_p:
                 sueldo_p = dict_p['sueldo']
-                
-                # Evitar duplicados
+
+                # VALIDACIÓN: Ya está en el equipo
                 if any(p.id_personal == dict_p['id_personal'] for p in personal_contratado):
-                    print("⚠️ Este trabajador ya está en tu equipo.")
+                    print("\n⚠️ Este trabajador ya fue añadido a su equipo.")
+
+                # VALIDACIÓN: Dinero
                 elif sueldo_p > presupuesto_provisional:
-                    print(f"❌ Presupuesto insuficiente. Falta: ${sueldo_p - presupuesto_provisional:,.2f}")
+                    print("\n❌ PRESUPUESTO INSUFICIENTE.")
+                    print(f"Cuesta: ${sueldo_p:,.2f} | Le quedan: ${presupuesto_provisional:,.2f}")
+
+                #  Contratar
                 else:
-                    # Si todo está ok, contratamos
                     presupuesto_provisional -= sueldo_p
-                    
-                    # Creamos el objeto
                     nuevo_socio = Personal(
                         dict_p['id_personal'],
                         dict_p['nombre'],
@@ -327,14 +441,14 @@ def ejecutar_registro_boda():
                         dict_p.get('experiencia', 'Estándar')
                     )
                     personal_contratado.append(nuevo_socio)
-                    print(f"\n✅ CONFIRMADO: {dict_p['nombre']} se une a la boda.")
+                    print(f"\n✅ EXCELENTE: {dict_p['nombre']} ha sido contratado.")
             else:
-                print("❌ ID no válido o el trabajador no está disponible en la lista mostrada.")
+                print("\n❌ ID no válido o no está en la lista de disponibles.")
 
             input("\nPresione Enter para continuar...")
 
         except ValueError:
-            print("⚠️ Error: Por favor, ingrese un número de ID válido.")
+            print("\n❌ ERROR: El ID debe ser un número entero.")
             input("Presione Enter...")
 # --- PASO 4: INVENTARIO CON VALIDACIÓN BLOQUEANTE ---
     tiene_florista = any(p.oficio.lower() == "flores" for p in personal_contratado)
@@ -344,7 +458,7 @@ def ejecutar_registro_boda():
     categorias_inv = ["catering", "bebida", "postre", "mobiliario", "tecnologia", "decoracion"]
 
     for cat in categorias_inv:
-        while True: 
+        while True:
             fg.limpiar_pantalla()
             # Guardamos el presupuesto antes de empezar la categoría por si hay que resetear
             presupuesto_antes_de_cat = presupuesto_provisional
@@ -352,29 +466,42 @@ def ejecutar_registro_boda():
 
             print(f"{'='*60}\n{f'PASO 4: {cat.upper()}'.center(60)}\n{'='*60}")
             print(f"💰 Presupuesto para esta sección: ${presupuesto_provisional:,.2f}")
-            
+
             if cat == "decoracion":
-                if tiene_florista: print("🌸 NOTA: Tiene Florista. Debe incluir flores.")
-                if tiene_iluminador: print("💡 NOTA: Tiene Iluminador. Debe incluir luces.")
+                if tiene_florista:
+                    print("🌸 NOTA: Tiene Florista. Debe incluir flores.")
+                if tiene_iluminador:
+                    print("💡 NOTA: Tiene Iluminador. Debe incluir luces.")
 
             items_categoria = [i for i in lista_inventario if i.get('categoria') == cat]
-            if not items_categoria: break
+            if not items_categoria:
+                break
 
             # Mostrar tabla
             print(f"\n{'ID':<6} | {'PRODUCTO':<25} | {'PRECIO':<10} | {'STOCK'}")
             print("-" * 60)
             for item in items_categoria:
-                print(f"{item['id_item']:<6} | {item['nombre']:<25} | ${item['precio_unidad']:<9.2f} | {item['cantidad']}")
+                # 1. Definimos el formato en una variable (así la línea es corta)
+                formato_tabla = "{:<6} | {:<25} | ${:<9.2f} | {}"
+
+            # 2. Usamos .format() pasando los datos uno por uno
+                print(formato_tabla.format(
+                    item['id_item'],
+                    item['nombre'],
+                    item['precio_unidad'],
+                    item['cantidad']
+                    ))
 
             # Bucle de selección de productos
             while True:
                 op = input(f"\nID de {cat} (o '0' para finalizar categoría): ").strip()
-                if op == '0': break 
+                if op == '0':
+                    break
 
                 try:
                     id_sel = int(op)
                     seleccionado = fg.buscar_elemento_id(id_sel, items_categoria, 'id_item')
-                    
+
                     if not seleccionado:
                         print("❌ ID no válido.")
                         continue
@@ -389,34 +516,49 @@ def ejecutar_registro_boda():
                         continue
 
                     cant = int(input(f"¿Unidades de '{seleccionado['nombre']}'?: "))
-                    if cant <= 0: continue
-                    
+                    if cant <= 0:
+                        continue
+
                     costo = seleccionado['precio_unidad'] * cant
 
                     if seleccionado['cantidad'] < cant:
-                        print(f"❌ Stock insuficiente. Solo hay {seleccionado['cantidad']} disponibles.")
+                        print(f"❌ Stock insuficiente. Solo hay "
+                              f"{seleccionado['cantidad']} disponibles.")
                     elif costo > presupuesto_provisional:
-                        print(f"❌ Presupuesto insuficiente. Falta: ${costo - presupuesto_provisional:,.2f}")
+                        falta = costo - presupuesto_provisional
+                        print(f"❌ Presupuesto insuficiente. "
+                              f"Falta: ${falta:,.2f}")
                     else:
                         presupuesto_provisional -= costo
-                        item_reserva = ItemReserva(seleccionado['id_item'], seleccionado['nombre'], seleccionado['precio_unidad'], cant)
+                        item_reserva = ItemReserva(
+                            seleccionado['id_item'],
+                            seleccionado['nombre'],
+                            seleccionado['precio_unidad'],
+                            cant
+                        )
                         items_en_esta_ronda.append(item_reserva)
-                        print(f"✅ Añadido: {seleccionado['nombre']} x{cant}. Restante: ${presupuesto_provisional:,.2f}")
+                        print(f"✅ Añadido: {seleccionado['nombre']} x{cant}. "
+                              f"Restante: ${presupuesto_provisional:,.2f}")
 
                 except ValueError:
                     print("⚠️ Error: Ingrese números válidos.")
 
             # --- VALIDACIÓN DE SALIDA (BLOQUEO LÓGICO) ---
             cumple_requisitos = True
-            
+
             # Unimos lo comprado en esta ronda a la lista general para validar
             servicios_totales_temp = servicios_elegidos + items_en_esta_ronda
 
             if cat == "mobiliario":
-                cant_sillas = sum(item.cantidad_requerida for item in servicios_totales_temp if "silla" in item.nombre.lower())
+                cant_sillas = sum(
+                item.cantidad_requerida
+                for item in servicios_totales_temp
+                if "silla" in item.nombre.lower()
+            )
                 sillas_min = int(cliente_actual.invitados * 0.8)
                 if cant_sillas < sillas_min:
-                    print(f"\n❌ SEGURIDAD: Faltan sillas. Necesita al menos {sillas_min} (tiene {cant_sillas}).")
+                    print(f"\n❌ SEGURIDAD: Faltan sillas. Necesita al menos "
+                      f"{sillas_min} (tiene {cant_sillas}).")
                     cumple_requisitos = False
 
             if cat == "decoracion" and tiene_florista:
@@ -427,10 +569,11 @@ def ejecutar_registro_boda():
             if cumple_requisitos:
                 # Si todo está bien, consolidamos la compra
                 servicios_elegidos.extend(items_en_esta_ronda)
-                break 
+                break
             else:
                 # ROLLBACK: Si no cumple, reseteamos el dinero y la lista de esta ronda
-                print("⚠️ Reintentando categoría... Se ha restaurado su presupuesto de esta sección.")
+                print("⚠️ Reintentando categoría... "
+                    "Se ha restaurado su presupuesto de esta sección.")
                 presupuesto_provisional = presupuesto_antes_de_cat
                 input("Presione Enter para volver a intentar...")
 
